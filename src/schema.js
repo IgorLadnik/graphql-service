@@ -24,13 +24,13 @@ const users = [
 ];
 
 const chatMessages = [
-    { name: 'ChatMessage', id: '0', content: 'aaaaaaa', time: Date.parse('2020-04-05'), user: users[1] },
-    { name: 'ChatMessage', id: '1', content: 'bbbbbbb', time: Date.parse('2020-04-05'), user: users[2] },
+    { name: 'ChatMessage', id: '0', content: 'aaaaaaa', time: Date.parse('2020-04-05'), author: users[1] },
+    { name: 'ChatMessage', id: '1', content: 'bbbbbbb', time: Date.parse('2020-04-05'), author: users[2] },
 ];
 
 const chats = [
-    { name: 'Chat', id: '0', users: [users[0], users[2]], messages: [chatMessages[0], chatMessages[1]] },
-    { name: 'Chat', id: '1', users: [users[1], users[0]], messages: [chatMessages[0], chatMessages[1]] },
+    { name: 'Chat', id: '0', participants: [users[0], users[2]], messages: [chatMessages[0], chatMessages[1]] },
+    { name: 'Chat', id: '1', participants: [users[1], users[0]], messages: [chatMessages[0], chatMessages[1]] },
 ];
 // -----------------------------------------------------------------------------------------
 
@@ -50,15 +50,7 @@ const ChatMessage = new GraphQLObjectType({
         id: { type: GraphQLID },
         content: { type: GraphQLString },
         time: { type: GraphQLString },
-        users: {
-            type: new GraphQLList(User),
-            args: {
-                id: { type: GraphQLID },
-            },
-            resolve(parent, args) {
-                return _.filter(users, {authorId: parent.id});
-            }
-        }
+        author: { type: User },
     })
 });
 
@@ -66,22 +58,16 @@ const Chat = new GraphQLObjectType({
     name: 'Chat',
     fields: () => ({
         id: { type: GraphQLID },
-        users: {
+        participants: {
             type: new GraphQLList(User),
-            args: {
-                id: { type: GraphQLID },
-            },
             resolve(parent, args) {
-                return _.filter(users, {authorId: parent.id});
+                return parent.participants;
             }
         },
         messages: {
             type: new GraphQLList(ChatMessage),
-            args: {
-                id: { type: GraphQLID },
-            },
             resolve(parent, args) {
-                return _.filter(users, {authorId: parent.id});
+                return parent.messages;
             }
         }
     })
@@ -141,21 +127,21 @@ module.exports = new GraphQLSchema({
 
 query {
   me {
-		id
+	id
     email
   }
 }
 
 query {
   user(id: 1) {
-		username
+	username
     id
   }
 }
 
 query {
   allUsers {
-		role
+	role
     username
     id
   }
@@ -163,7 +149,7 @@ query {
 
 query {
   search(term: "Users") {
-		id
+	id
     email
   }
 }
@@ -171,9 +157,14 @@ query {
 query {
   myChats {
 		id
-    users {
-      id
+    participants {
       username
+    }
+    messages {
+      author {
+      	username
+    	}
+      content
     }
   }
 }
