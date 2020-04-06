@@ -5,7 +5,6 @@ import graphqlHTTP from 'express-graphql';
 import {GqlSchemaParser} from './gqlSchemaParser';
 import {GraphQLResolveInfo} from 'graphql';
 import _ from "lodash";
-//import { User, Chat, ChatMessage, Role } from './schema';
 
 const strSchema = `
 scalar Date
@@ -60,22 +59,21 @@ type ChatMessage implements Node {
 
 (async function main()
 {
-    const gqlSchemaParser = await new GqlSchemaParser(strSchema, false).processSchema();
-    const classes = gqlSchemaParser.generatedClasses;
+    const gqlSchemaParser = await new GqlSchemaParser(strSchema);
 
     // Data ------------------------------------------------------------------------------------
-    const users/*: Array<User>*/ = [
+    const users = [
         {__typename: 'User', id: '0', common: 'aa', username: 'Julius Verne', email: 'jv@MysteriousIsland.com', role: 'ADMIN'/*Role.Admin*/},
         {__typename: 'User', id: '1', common: 'cc', username: 'Cyrus Smith', email: 'cs@MysteriousIsland.com', role: 'USER'/*Role.User*/},
         {__typename: 'User', id: '2', common: 'dd', username: 'Gedeon Spilett', email: 'gs@MysteriousIsland.com', role: 'USER'/*Role.User*/},
     ];
 
-    const chatMessages/*: Array<ChatMessage>*/ = [
+    const chatMessages = [
         {__typename: 'ChatMessage', id: '0', common: 'ee', content: 'aaaaaaa', time: Date.parse('2020-04-05'), user: users[1]},
         {__typename: 'ChatMessage', id: '1', common: 'ff', content: 'bbbbbbb', time: Date.parse('2020-04-05'), user: users[2]},
     ];
 
-    const chats/*: Array<Chat>*/ = [
+    const chats = [
         {__typename: 'Chat', id: '0', common: 'gg', users: [users[0], users[2]], messages: [chatMessages[0], chatMessages[1]]},
         {__typename: 'Chat', id: '1', common: 'hh', users: [users[1], users[0]], messages: [chatMessages[0], chatMessages[1]]},
     ];
