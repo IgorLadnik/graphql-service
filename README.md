@@ -1,2 +1,2 @@
-# codegen07-service
+# graphql-service
 
