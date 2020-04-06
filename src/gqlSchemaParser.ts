@@ -9,92 +9,6 @@ const path = require('path');
 const fs = require('fs');
 const Module = require('module');
 
-const jsFinalCode = `
-exports.jsCode = (workingDir) => {
-   
-   class Node {
-     __typename;
-     id;
-     common;
-     constructor(typename, id, common) {
-        this.__typename = typename;
-        this.id = id;
-        this.common = common;
-     }
-   }
-   
-   class User extends Node {
-        username;
-        email;
-        role;
-        constructor(id, username, email, role) {
-            super('User', id, '**');
-            this.username = username;
-            this.email = email;
-            this.role = role;
-        }
-    };
-
-    class Chat extends Node {
-        users;
-        messages;
-        constructor(id, users, messages) {
-            super('Chat', id, '@@');
-            this.users = users;
-            this.messages = messages;
-        }
-    };
-    
-    class ChatMessage extends Node {
-        content;
-        time;
-        user;
-        constructor(id, content, time, user) {
-            super('ChatMessage', id, '##');
-            this.content = content;
-            this.time = time;
-            this.user = user;
-        }
-    };
-    
-    // class QueryUserArgs {
-    //     id;
-    //     constructor(id) {
-    //         this.id = id;
-    //     }
-    // };
-    //
-    // class QuerySearchArgs {
-    //     term;
-    //     constructor(term) {
-    //         this.term = term;
-    //     }
-    // };
-    
-    const Role = {
-        User: 'USER',
-        Admin: 'ADMIN'
-    };
-        
-    class Query {
-        me;
-        user;
-        allUsers;
-        search;
-        myChats;
-        constructor(me, user, allUsers, search, myChats) {
-            this.me = me;
-            this.user = user;
-            this.allUsers = allUsers;
-            this.search = search;
-            this.myChats = myChats;
-        }
-    };
-    
-    return { User, Chat, ChatMessage, /*QueryUserArgs, QuerySearchArgs,*/ Role, Query };
-}
-`;
-
 export type ResolverFn = (parent: any, args: any, context: any, info: GraphQLResolveInfo) => any;
 
 export interface ResolverMap {
@@ -152,20 +66,20 @@ export class GqlSchemaParser {
     }
 
     async processSchema(): Promise<GqlSchemaParser> {
-        // graphQL schema --> tsInitCode
-        let code = await this.generateInitTsCode();
-
-        // tsInitCode --> tsFinalCode
-        code = this.tsPostProcessing(code);
-
-        // tsFinalCode --> jsInitCode
-        code = this.transpilation(code);
-
-        // jsInitCode -> jsFinalCode
-        code = this.jsPostProcessing(code);
-
-        // jsCode --> generatedClasses
-        this.produceGeneratedClasses(code);
+        // // graphQL schema --> tsInitCode
+        // let code = await this.generateInitTsCode();
+        //
+        // // tsInitCode --> tsFinalCode
+        // code = this.tsPostProcessing(code);
+        //
+        // // tsFinalCode --> jsInitCode
+        // code = this.transpilation(code);
+        //
+        // // jsInitCode -> jsFinalCode
+        // code = this.jsPostProcessing(code);
+        //
+        // // jsCode --> generatedClasses
+        // this.produceGeneratedClasses(code);
 
         return this;
     }
@@ -239,7 +153,7 @@ export class GqlSchemaParser {
         let outCode: string = '';
 
         // Not implemented yet
-        outCode = jsFinalCode;
+        //outCode = jsFinalCode;
 
         this.outputResultToFile('-final.js', outCode);
         return outCode;

@@ -2,9 +2,10 @@ import express from 'express';
 import compression from 'compression';
 import cors from 'cors';
 import graphqlHTTP from 'express-graphql';
-import {GqlSchemaParser} from "./gqlSchemaParser";
-import {GraphQLResolveInfo} from "graphql";
+import {GqlSchemaParser} from './gqlSchemaParser';
+import {GraphQLResolveInfo} from 'graphql';
 import _ from "lodash";
+//import { User, Chat, ChatMessage, Role } from './schema';
 
 const strSchema = `
 scalar Date
@@ -63,20 +64,20 @@ type ChatMessage implements Node {
     const classes = gqlSchemaParser.generatedClasses;
 
     // Data ------------------------------------------------------------------------------------
-    const users = [
-        new classes.User(0, 'Julius Verne', 'jv@MysteriousIsland.com', classes.Role.Admin),
-        new classes.User(1, 'Cyrus Smith', 'cs@MysteriousIsland.com', classes.Role.Admin),
-        new classes.User(2, 'Gedeon Spilett', 'gs@MysteriousIsland.com', classes.Role.User),
+    const users/*: Array<User>*/ = [
+        {__typename: 'User', id: '0', common: 'aa', username: 'Julius Verne', email: 'jv@MysteriousIsland.com', role: 'ADMIN'/*Role.Admin*/},
+        {__typename: 'User', id: '1', common: 'cc', username: 'Cyrus Smith', email: 'cs@MysteriousIsland.com', role: 'USER'/*Role.User*/},
+        {__typename: 'User', id: '2', common: 'dd', username: 'Gedeon Spilett', email: 'gs@MysteriousIsland.com', role: 'USER'/*Role.User*/},
     ];
 
-    const chatMessages = [
-        new classes.ChatMessage(0, 'aaaaaaa', Date.parse('2020-04-05'), users[1]),
-        new classes.ChatMessage(1, 'bbbbbbb', Date.parse('2020-04-05'), users[2]),
+    const chatMessages/*: Array<ChatMessage>*/ = [
+        {__typename: 'ChatMessage', id: '0', common: 'ee', content: 'aaaaaaa', time: Date.parse('2020-04-05'), user: users[1]},
+        {__typename: 'ChatMessage', id: '1', common: 'ff', content: 'bbbbbbb', time: Date.parse('2020-04-05'), user: users[2]},
     ];
 
-    const chats = [
-        new classes.Chat(0, [users[0], users[2]], [chatMessages[0], chatMessages[1]]),
-        new classes.Chat(1, [users[1], users[0]], [chatMessages[0], chatMessages[1]]),
+    const chats/*: Array<Chat>*/ = [
+        {__typename: 'Chat', id: '0', common: 'gg', users: [users[0], users[2]], messages: [chatMessages[0], chatMessages[1]]},
+        {__typename: 'Chat', id: '1', common: 'hh', users: [users[1], users[0]], messages: [chatMessages[0], chatMessages[1]]},
     ];
     // -----------------------------------------------------------------------------------------
 
@@ -141,7 +142,7 @@ function setResolversAfterStartListening(gqlSchemaParser: GqlSchemaParser,
             switch (parent.term.toLowerCase()) {
                 case 'users': collection = users; break;
                 case 'chats': collection = chats; break;
-                case 'chatmessages': collection = chatMessages;  break;
+                case 'chatmessages': collection = chatMessages; break;
                 default: collection = _.flatten(_.concat(users, chats, chatMessages)); break;
             }
             return collection;
