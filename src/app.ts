@@ -5,6 +5,7 @@ import graphqlHTTP from 'express-graphql';
 import {GqlSchemaParser} from './gqlSchemaParser';
 import {GraphQLResolveInfo} from 'graphql';
 import _ from "lodash";
+import { setResolversAfterStartListening } from './schema';
 
 const strSchema = `
 scalar Date
@@ -104,56 +105,56 @@ type ChatMessage implements Node {
     }
 })();
 
-function setResolversAfterStartListening(gqlSchemaParser: GqlSchemaParser,
-                                         users: Array<any>, chats: Array<any>, chatMessages: Array<any>) {
-    gqlSchemaParser.setResolvers(
-      //-------------------------------------------------------------------------------------------
-      { resolverName: 'me',
-        fn: (parent: any, args: any, context: any, info: GraphQLResolveInfo) => {
-            console.log('resolver: me');
-            return users[0];
-        }
-      },
-      //-------------------------------------------------------------------------------------------
-      {
-        resolverName: 'user',
-        fn: (parent: any, args: any, context: any, info: GraphQLResolveInfo) => {
-            //_.filter(pms, pm => pm.id === parent.id)[0]?.name
-            console.log(`resolver: user(${parent.id})`);
-            return users[parent.id];
-        }
-      },
-      //-------------------------------------------------------------------------------------------
-      {
-        resolverName: 'allUsers',
-        fn: (parent: any, args: any, context: any, info: GraphQLResolveInfo) => {
-            console.log('resolver: allUsers');
-            return users;
-        }
-      },
-      //-------------------------------------------------------------------------------------------
-      {
-        resolverName: 'search',
-        fn: (parent: any, args: any, context: any, info: GraphQLResolveInfo) => {
-            console.log(`resolver: parent.id = ${parent.term}`);
-            let collection;
-            switch (parent.term.toLowerCase()) {
-                case 'users': collection = users; break;
-                case 'chats': collection = chats; break;
-                case 'chatmessages': collection = chatMessages; break;
-                default: collection = _.flatten(_.concat(users, chats, chatMessages)); break;
-            }
-            return collection;
-        }
-      },
-      //-------------------------------------------------------------------------------------------
-      {
-        resolverName: 'myChats',
-        fn: (parent: any, args: any, context: any, info: GraphQLResolveInfo) => {
-           console.log('resolver: myChats');
-           return chats; //TEMP
-        }
-      },
-        //-------------------------------------------------------------------------------------------
-    );
-}
+// function setResolversAfterStartListening(gqlSchemaParser: GqlSchemaParser,
+//                                          users: Array<any>, chats: Array<any>, chatMessages: Array<any>) {
+//     gqlSchemaParser.setResolvers(
+//       //-------------------------------------------------------------------------------------------
+//       { resolverName: 'me',
+//         fn: (parent: any, args: any, context: any, info: GraphQLResolveInfo) => {
+//             console.log('resolver: me');
+//             return users[0];
+//         }
+//       },
+//       //-------------------------------------------------------------------------------------------
+//       {
+//         resolverName: 'user',
+//         fn: (parent: any, args: any, context: any, info: GraphQLResolveInfo) => {
+//             //_.filter(pms, pm => pm.id === parent.id)[0]?.name
+//             console.log(`resolver: user(${parent.id})`);
+//             return users[parent.id];
+//         }
+//       },
+//       //-------------------------------------------------------------------------------------------
+//       {
+//         resolverName: 'allUsers',
+//         fn: (parent: any, args: any, context: any, info: GraphQLResolveInfo) => {
+//             console.log('resolver: allUsers');
+//             return users;
+//         }
+//       },
+//       //-------------------------------------------------------------------------------------------
+//       {
+//         resolverName: 'search',
+//         fn: (parent: any, args: any, context: any, info: GraphQLResolveInfo) => {
+//             console.log(`resolver: parent.id = ${parent.term}`);
+//             let collection;
+//             switch (parent.term.toLowerCase()) {
+//                 case 'users': collection = users; break;
+//                 case 'chats': collection = chats; break;
+//                 case 'chatmessages': collection = chatMessages; break;
+//                 default: collection = _.flatten(_.concat(users, chats, chatMessages)); break;
+//             }
+//             return collection;
+//         }
+//       },
+//       //-------------------------------------------------------------------------------------------
+//       {
+//         resolverName: 'myChats',
+//         fn: (parent: any, args: any, context: any, info: GraphQLResolveInfo) => {
+//            console.log('resolver: myChats');
+//            return chats; //TEMP
+//         }
+//       },
+//         //-------------------------------------------------------------------------------------------
+//     );
+// }
