@@ -1,7 +1,5 @@
-import { union } from "lodash";
 const graphql = require('graphql');
 const _ = require('lodash');
-
 const {
     GraphQLObjectType,
     GraphQLString,
@@ -11,30 +9,12 @@ const {
     GraphQLList,
 } = graphql;
 
-const Role = {
+export const Role = {
     User: 'USER',
     Admin: 'ADMIN'
 };
 
-// Data ------------------------------------------------------------------------------------
-const users = [
-    { name: 'User', id: '0', username: 'Julius Verne', email: 'jv@MysteriousIsland.com', role: Role.Admin },
-    { name: 'User', id: '1', username: 'Cyrus Smith', email: 'cs@MysteriousIsland.com', role: Role.User },
-    { name: 'User', id: '2', username: 'Gedeon Spilett', email: 'gs@MysteriousIsland.com', role: Role.User },
-];
-
-const chatMessages = [
-    { name: 'ChatMessage', id: '0', content: 'aaaaaaa', time: Date.parse('2020-04-05'), author: users[1] },
-    { name: 'ChatMessage', id: '1', content: 'bbbbbbb', time: Date.parse('2020-04-05'), author: users[2] },
-];
-
-const chats = [
-    { name: 'Chat', id: '0', participants: [users[0], users[2]], messages: [chatMessages[0], chatMessages[1]] },
-    { name: 'Chat', id: '1', participants: [users[1], users[0]], messages: [chatMessages[0], chatMessages[1]] },
-];
-// -----------------------------------------------------------------------------------------
-
-const User = new GraphQLObjectType({
+export const User = new GraphQLObjectType({
     name: 'User',
     fields: () => ({
         id: { type: GraphQLID },
@@ -44,7 +24,7 @@ const User = new GraphQLObjectType({
     })
 });
 
-const ChatMessage = new GraphQLObjectType({
+export const ChatMessage = new GraphQLObjectType({
     name: 'ChatMessage',
     fields: () => ({
         id: { type: GraphQLID },
@@ -54,28 +34,31 @@ const ChatMessage = new GraphQLObjectType({
     })
 });
 
-const Chat = new GraphQLObjectType({
+export const Chat = new GraphQLObjectType({
     name: 'Chat',
     fields: () => ({
         id: { type: GraphQLID },
         participants: {
             type: new GraphQLList(User),
-            resolve(parent, args) {
-                return parent.participants;
-            }
+            resolve: (parent: any, args: any) => parent.participants
         },
         messages: {
             type: new GraphQLList(ChatMessage),
-            resolve(parent, args) {
-                return parent.messages;
-            }
+            resolve: (parent: any, args: any) => parent.messages
         }
     })
 });
 
-const Query = new GraphQLObjectType({
+/*
+export const Query = new GraphQLObjectType({
     name: 'Query',
     fields: {
+
+        dummy: {
+            // type: undefined,
+            // args: undefined,
+            // resolve: (parent, args) => undefined
+        },
 
         me: {
             type: User,
@@ -118,12 +101,9 @@ const Query = new GraphQLObjectType({
         },
     }
 });
+*/
 
-module.exports = new GraphQLSchema({
-    query: Query
-});
-
-/*
+/* Queries
 
 query {
   me {
