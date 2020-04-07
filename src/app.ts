@@ -73,7 +73,7 @@ const {
             name: 'myChats',
             properties: {
                 type: GraphQLList(Chat),
-                resolve: (parent: any, args: any) => chats
+                resolve: (parent: any, args: any) => chats //TEMP
             }
         });
 
@@ -99,14 +99,68 @@ const users = [
 ];
 
 const chatMessages = [
-    { name: 'ChatMessage', id: '0', content: 'aaaaaaa', time: Date.parse('2020-04-05'), author: users[1] },
-    { name: 'ChatMessage', id: '1', content: 'bbbbbbb', time: Date.parse('2020-04-05'), author: users[2] },
+    { name: 'ChatMessage', id: '0', content: 'aaaaaaa', time: Date.parse('2020-04-07'), author: users[0] },
+    { name: 'ChatMessage', id: '1', content: 'bbbbbbb', time: Date.parse('2020-04-07'), author: users[1] },
+    { name: 'ChatMessage', id: '2', content: 'ccccccc', time: Date.parse('2020-04-07'), author: users[0] },
+    { name: 'ChatMessage', id: '3', content: 'ddddddd', time: Date.parse('2020-04-07'), author: users[0] },
+    { name: 'ChatMessage', id: '4', content: 'eeeeeee', time: Date.parse('2020-04-07'), author: users[2] },
 ];
 
 const chats = [
-    { name: 'Chat', id: '0', participants: [users[0], users[2]], messages: [chatMessages[0], chatMessages[1]] },
-    { name: 'Chat', id: '1', participants: [users[1], users[0]], messages: [chatMessages[0], chatMessages[1]] },
+    { name: 'Chat', id: '0', participants: [users[0], users[1], users[2]], messages: [chatMessages[0], chatMessages[1]] },
+    { name: 'Chat', id: '1', participants: [users[1], users[0]], messages: [chatMessages[1], chatMessages[2], chatMessages[3]] },
+    { name: 'Chat', id: '2', participants: [users[0], users[1]], messages: [chatMessages[2], chatMessages[1]] },
+    { name: 'Chat', id: '3', participants: [users[2], users[0]], messages: [chatMessages[4], chatMessages[1], chatMessages[2]] },
 ];
 // -----------------------------------------------------------------------------------------
+
+/* Queries
+
+query {
+  me {
+	id
+    email
+  }
+}
+
+query {
+  user(id: 1) {
+	username
+    id
+  }
+}
+
+query {
+  allUsers {
+	role
+    username
+    id
+  }
+}
+
+query {
+  search(term: "Users") {
+	id
+    email
+  }
+}
+
+query {
+  myChats {
+		id
+    participants {
+      username
+    }
+    messages {
+      author {
+      	username
+    	}
+      content
+    }
+  }
+}
+
+*/
+
 
 

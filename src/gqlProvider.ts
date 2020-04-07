@@ -15,9 +15,9 @@ export class GqlProvider {
     schema: any;
     config = new GraphQLObjectType({ name: 'Query' }).toConfig();
 
-    addQueryFields(...arrArgs: Array<Field>) {
+    addQueryFields = (...arrArgs: Array<Field>) => {
         for (let i = 0; i < arrArgs.length; i++) {
-            let fieldDummy = new GraphQLObjectType({ name: '_', fields: { dummy: {} } }).toConfig().fields.dummy;
+            let fieldDummy = GqlProvider.createFreshDummyField();
             let name = arrArgs[i].name;
             let properties = arrArgs[i].properties;
             let field = fieldDummy;
@@ -30,4 +30,7 @@ export class GqlProvider {
         this.schema = new GraphQLSchema({ query: new GraphQLObjectType(this.config) });
         return this;
     }
+
+    private static createFreshDummyField = () =>
+        new GraphQLObjectType({ name: '_', fields: { dummy: {} } }).toConfig().fields.dummy;
 }
