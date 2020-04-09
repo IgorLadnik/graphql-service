@@ -12,13 +12,14 @@ export interface ResolverFunctionMap {
 }
 
 export type Field = { name: string, fn: ResolveFunction };
-export type ResolveField = { name: string, args: Array<ResolveArg>, selections: Array<ResolveArg> };
+export type ResolveField = { name: string, args: Array<ResolveArg>, argsSelection: Array<ResolveArg> };
 export type ResolveArg = { name: string, value: any, type: string };
 export type ResolveFunction = (args: ResolveField) => any;
 
 export class GqlProvider {
     readonly schema: any;
     private resolveFunctions: ResolverFunctionMap = { };
+    private indent: string;
 
     constructor() {
         const config = new GraphQLObjectType({ name: 'Query' }).toConfig();
@@ -41,7 +42,8 @@ export class GqlProvider {
     }
 
     executeFn = (ob: any): Array<any> => {
-        const args = GqlProvider.parse(ob.selectionSet);
+        this.indent = '';
+        const args = this.parse(ob.selectionSet);
         const retArr = new Array<any>();
         for (let i = 0; i < args.length; i++) {
             const fieldName = args[i].name;
@@ -69,18 +71,21 @@ export class GqlProvider {
     }
 
     // Currently recursive - interim
-    private static parse = (selectionSet: any): Array<ResolveField> => {
+    private parse = (selectionSet: any): Array<ResolveField> => {
         const retArr = new Array<ResolveField>();
         if (!selectionSet)
             return retArr;
+
+        //console.log('parse');
+        this.indent += '\t';
 
         let selections = selectionSet.selections;
         for (let i = 0; i < selections.length; i++) {
             const selection = selections[i];
             const fieldName = selection.name.value;
-            const args = GqlProvider.parseInner(selection);
+            const args = this.parseInner(selection);
 
-            const argsSelection = GqlProvider.parse(selection.selectionSet);
+            const argsSelection = this.parse(selection.selectionSet);
             const selections1 = new Array<ResolveArg>();
             if (argsSelection.length > 0) {
                 const names: Array<string> = argsSelection.map(ob => ob.name);
@@ -88,18 +93,21 @@ export class GqlProvider {
                     selections1.push({ name: names[i], value: undefined, type: '' });
             }
 
+            console.log(`fieldName = ${this.indent.length} ${this.indent}\"${fieldName}\"`);
+
             const resolveField: ResolveField = {
                 name: fieldName,
                 args: args,
-                selections: selections1
+                argsSelection: selections1
             };
             retArr.push(resolveField);
         }
 
+        this.indent = this.indent.substr(1, this.indent.length - 1);
         return retArr;
     }
 
-    private static parseInner = (selection: any): Array<ResolveArg> => {
+    private parseInner = (selection: any): Array<ResolveArg> => {
         const args = new Array<ResolveArg>();
         for (let j = 0; j < selection.arguments.length; j++) {
             const argument = selection.arguments[j];

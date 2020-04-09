@@ -40,11 +40,13 @@ export const Chat = new GraphQLObjectType({
         id: { type: GraphQLID },
         participants: {
             type: new GraphQLList(User),
-            resolve: (parent: any, args: any) => parent.participants
+            resolve:
+                (parent: any, args: any) => parent.participants
         },
         messages: {
             type: new GraphQLList(ChatMessage),
-            resolve: (parent: any, args: any) => parent.messages
+            resolve:
+                (parent: any, args: any) => parent.messages
         }
     })
 });
