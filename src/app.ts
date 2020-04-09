@@ -21,7 +21,8 @@ import _ from 'lodash';
         graphiql: true,
 
         customExecuteFn: (args: ExecutionArgs): any =>
-            gqlProvider.executeFn(args.document.definitions[0])[0].value,
+            //gqlProvider.executeFn(args.document.definitions[0])[0].value,
+            gqlProvider.executeFn(args.document.definitions[0]),
 
         customValidateFn: (schema, documentAST, validationRules): any =>
             true,

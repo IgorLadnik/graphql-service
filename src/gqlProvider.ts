@@ -12,7 +12,7 @@ export interface ResolverFunctionMap {
 }
 
 export type Field = { name: string, fn: ResolveFunction };
-export type ResolveField = { name: string, args: Array<ResolveArg>, argsSelection: Array<ResolveArg> };
+export type ResolveField = { parentName: string, depth: number, name: string, args: Array<ResolveArg>, argsSelection: Array<ResolveField> };
 export type ResolveArg = { name: string, value: any, type: string };
 export type ResolveFunction = (args: ResolveField) => any;
 
@@ -20,6 +20,8 @@ export class GqlProvider {
     readonly schema: any;
     private resolveFunctions: ResolverFunctionMap = { };
     private indent: string;
+    private currentDepth: number;
+    private arrResolveField: Array<ResolveField>;
 
     constructor() {
         const config = new GraphQLObjectType({ name: 'Query' }).toConfig();
@@ -41,26 +43,31 @@ export class GqlProvider {
         return dummyField;
     }
 
-    executeFn = (ob: any): Array<any> => {
+    executeFn = (ob: any): string => {
         this.indent = '';
-        const args = this.parse(ob.selectionSet);
-        const retArr = new Array<any>();
-        for (let i = 0; i < args.length; i++) {
-            const fieldName = args[i].name;
-            const fn = this.resolveFunctions[fieldName];
-            if (fn) {
-                try {
-                    retArr.push({name: fieldName, value: fn(args[i])});
-                }
-                catch (err) {
-                    retArr.push({name: fieldName, value: `Error on \"${fieldName}\" resolver execution: ${err}`});
-                }
-            }
-            else
-                retArr.push({name: fieldName, value: `Error on \"${fieldName}\": resolve function is not defined`});
-        }
+        this.currentDepth = -1;
+        this.arrResolveField = new Array<ResolveField>();
+        this.parse('', ob.selectionSet);
+        const resolvedField = _.filter(this.arrResolveField, rf => rf.depth === 0)[0];
+        return this.resolveFunctions[resolvedField.name](resolvedField);
 
-        return retArr;
+        //const retArr = new Array<any>();
+        // for (let i = 0; i < this.arrResolveField.length; i++) {
+        //     const fieldName = this.arrResolveField[i].name;
+        //     const fn = this.resolveFunctions[fieldName];
+        //     if (fn) {
+        //         try {
+        //             retArr.push({name: fieldName, value: fn(this.arrResolveField[i])});
+        //         }
+        //         catch (err) {
+        //             retArr.push({name: fieldName, value: `Error on \"${fieldName}\" resolver execution: ${err}`});
+        //         }
+        //     }
+        //     else
+        //         retArr.push({name: fieldName, value: `Error on \"${fieldName}\": resolve function is not defined`});
+        // }
+        //
+        // return retArr;
     }
 
     setResolveFunctions = (...arrArgs: Array<Field>) => {
@@ -71,44 +78,42 @@ export class GqlProvider {
     }
 
     // Currently recursive - interim
-    private parse = (selectionSet: any): Array<ResolveField> => {
+    private parse = (parentName: string, selectionSet: any): Array<ResolveField> => {
         const retArr = new Array<ResolveField>();
         if (!selectionSet)
             return retArr;
 
-        //console.log('parse');
         this.indent += '\t';
+        this.currentDepth++;
 
         let selections = selectionSet.selections;
         for (let i = 0; i < selections.length; i++) {
             const selection = selections[i];
             const fieldName = selection.name.value;
             const args = this.parseInner(selection);
+            const argsSelection = this.parse(fieldName, selection.selectionSet);
 
-            const argsSelection = this.parse(selection.selectionSet);
-            const selections1 = new Array<ResolveArg>();
-            if (argsSelection.length > 0) {
-                const names: Array<string> = argsSelection.map(ob => ob.name);
-                for (let j = 0; j < argsSelection.length; j++)
-                    selections1.push({ name: names[i], value: undefined, type: '' });
-            }
-
-            console.log(`fieldName = ${this.indent.length} ${this.indent}\"${fieldName}\"`);
+            console.log(`fieldName = ${this.currentDepth} ${this.indent}\"${fieldName}\"`);
 
             const resolveField: ResolveField = {
+                parentName,
+                depth: this.currentDepth,
                 name: fieldName,
-                args: args,
-                argsSelection: selections1
+                args,
+                argsSelection
             };
+
             retArr.push(resolveField);
+            this.arrResolveField.push(resolveField);
         }
 
         this.indent = this.indent.substr(1, this.indent.length - 1);
+        this.currentDepth--;
         return retArr;
     }
 
     private parseInner = (selection: any): Array<ResolveArg> => {
-        const args = new Array<ResolveArg>();
+        const resolveArgs = new Array<ResolveArg>();
         for (let j = 0; j < selection.arguments.length; j++) {
             const argument = selection.arguments[j];
             let resolveArg: ResolveArg;
@@ -129,9 +134,9 @@ export class GqlProvider {
                     break;
             }
 
-            args.push(resolveArg);
+            resolveArgs.push(resolveArg);
         }
 
-        return args;
+        return resolveArgs;
     }
 }
