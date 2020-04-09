@@ -16,6 +16,7 @@ export const Role = {
 
 export const User = new GraphQLObjectType({
     name: 'User',
+    isTypeOf: GraphQLObjectType,
     fields: () => ({
         id: { type: GraphQLID },
         username: { type: GraphQLString },
@@ -26,6 +27,7 @@ export const User = new GraphQLObjectType({
 
 export const ChatMessage = new GraphQLObjectType({
     name: 'ChatMessage',
+    isTypeOf: GraphQLObjectType,
     fields: () => ({
         id: { type: GraphQLID },
         content: { type: GraphQLString },
@@ -36,6 +38,7 @@ export const ChatMessage = new GraphQLObjectType({
 
 export const Chat = new GraphQLObjectType({
     name: 'Chat',
+    isTypeOf: GraphQLObjectType,
     fields: () => ({
         id: { type: GraphQLID },
         participants: {

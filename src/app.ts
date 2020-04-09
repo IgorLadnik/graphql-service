@@ -14,7 +14,8 @@ import _ from 'lodash';
     app.use('*', cors());
     app.use(compression());
 
-    const gqlProvider = new GqlProvider();
+    const gqlProvider = new GqlProvider().setGqjObjects(User, Chat, ChatMessage);
+    const nn = gqlProvider.arrGqlObject[0].name;
 
     app.use('/graphql', graphqlHTTP({
         schema: gqlProvider.schema,

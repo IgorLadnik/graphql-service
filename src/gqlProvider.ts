@@ -22,6 +22,7 @@ export class GqlProvider {
     private indent: string;
     private currentDepth: number;
     private arrResolveField: Array<ResolveField>;
+    private arrGqlObject = new Array<any>();
 
     constructor() {
         const config = new GraphQLObjectType({ name: 'Query' }).toConfig();
@@ -70,12 +71,27 @@ export class GqlProvider {
         // return retArr;
     }
 
-    setResolveFunctions = (...arrArgs: Array<Field>) => {
+    setResolveFunctions = (...arrArgs: Array<Field>): GqlProvider => {
         for (let i = 0; i < arrArgs.length; i++) {
             const field = arrArgs[i];
             this.resolveFunctions[field.name] = field.fn;
         }
+
+        return this;
     }
+
+    setGqjObjects = (...arrArgs: Array<any>): GqlProvider => {
+        for (let i = 0; i < arrArgs.length; i++) {
+            const ob = arrArgs[i];
+            if (ob.isTypeOf === GraphQLObjectType)
+                this.arrGqlObject.push(ob);
+        }
+
+        return this;
+    }
+
+    getGqjObject = (i: number): any =>
+        this.arrGqlObject.length > i ? this.arrGqlObject[i] : null;
 
     // Currently recursive - interim
     private parse = (parentName: string, selectionSet: any): Array<ResolveField> => {
