@@ -2,12 +2,10 @@ import express from 'express';
 import compression from 'compression';
 import cors from 'cors';
 import graphqlHTTP from 'express-graphql';
-import { GqlProvider } from './gqlProvider';
+import { GqlProvider} from './gqlProvider';
 import { User, Chat, ChatMessage, Role } from './schema';
-import {DocumentNode, ExecutionArgs, ExecutionResult, GraphQLError, GraphQLFieldResolver, Source} from "graphql";
-import {Options} from "graphql-depth-limit";
-const _ = require('lodash');
-const graphql = require('graphql');
+import { ExecutionArgs, GraphQLError } from "graphql";
+import _ from 'lodash';
 
 (async function main()
 {
@@ -16,43 +14,24 @@ const graphql = require('graphql');
     app.use('*', cors());
     app.use(compression());
 
-    let port = 3000;
-    let address = `http://localhost:${port}/graphql`;
-
     const gqlProvider = new GqlProvider();
 
     app.use('/graphql', graphqlHTTP({
         schema: gqlProvider.schema,
         graphiql: true,
-        // rootValue: (args: any) => {
-        //   console.log('rootValue');
-        // },
-        customExecuteFn: (args: ExecutionArgs): /*Promise<ExecutionResult>*/any => {
-            console.log('** start customExecuteFn');
-            let definition: any = args.document.definitions[0];
-            let loc: any = definition.loc;
-            console.log('** end customExecuteFn');
-            return gqlProvider.executeFn(args.document.definitions[0])[0].value;
-        },
-        // fieldResolver: (args: any): any => {
-        //     console.log('fieldResolver');
-        // },
-        // typeResolver: (args: any): any => {
-        //     console.log('typeResolver');
-        // },
-        // customParseFn: (source: Source): any => {
-        //     console.log(source);
-        //     return false;
-        // },
-        customFormatErrorFn: (error: GraphQLError) => {
-            console.log('customFormatErrorFn');
-        },
-        customValidateFn: (schema, documentAST, validationRules): any => {
-            console.log('** start customValidateFn');
-            console.log('** end customValidateFn');
-            return true;
-        },
+
+        customExecuteFn: (args: ExecutionArgs): any =>
+            gqlProvider.executeFn(args.document.definitions[0])[0].value,
+
+        customValidateFn: (schema, documentAST, validationRules): any =>
+            true,
+
+        customFormatErrorFn: (error: GraphQLError) =>
+            console.log('customFormatErrorFn')
     }));
+
+    let port = 3000;
+    let address = `http://localhost:${port}/graphql`;
 
     try {
         await app.listen(port);
@@ -62,10 +41,18 @@ const graphql = require('graphql');
         console.log(`\n*** Error to listen on ${address}. ${err}`)
     }
 
-    gqlProvider.resolveFunctions['user'] = (args) => {
-        return JSON.stringify(users[args.args[0].value]);
-    }
-
+    gqlProvider.setResolveFunctions(
+        {
+            name: 'user',
+            fn: (args) =>
+                JSON.stringify(users[args.args[0].value])
+        },
+        {
+            name: 'myChats',
+            fn: (args) =>
+                JSON.stringify(chats) //TEMP
+        },
+    );
 })();
 
 // Test Data ------------------------------------------------------------------------------------

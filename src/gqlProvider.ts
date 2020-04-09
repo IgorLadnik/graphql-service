@@ -1,63 +1,44 @@
-//import { /*parse, buildSchema,*/ GraphQLObjectType, GraphQLSchema, GraphQLResolveInfo, GraphQLOutputType } from 'graphql';
-import _ from 'lodash';
-import { GraphQLResolveInfo, GraphQLSchema } from 'graphql';
 const graphql = require('graphql');
 const {
     GraphQLObjectType,
     GraphQLString,
-    //GraphQLSchema,
+    GraphQLSchema,
     GraphQLID,
-    GraphQLInt,
-    GraphQLList,
 } = graphql;
-import { User, Chat, ChatMessage, Role } from './schema';
-import { users } from './app';
-
-//export type ResolverFn = (parent: any, args: any, context: any, info: GraphQLResolveInfo) => any;
+import _ from 'lodash';
 
 export interface ResolverFunctionMap {
     [fieldName: string]: ResolveFunction;
 }
 
-export type Field = { name: string, properties: any };
-export type ResolveField = { name: string, args: Array<ResolveArg> };
+export type Field = { name: string, fn: ResolveFunction };
+export type ResolveField = { name: string, args: Array<ResolveArg>, selections: Array<ResolveArg> };
 export type ResolveArg = { name: string, value: any, type: string };
 export type ResolveFunction = (args: ResolveField) => any;
 
 export class GqlProvider {
-    schema: any;
-    config = new GraphQLObjectType({ name: 'Query' }).toConfig();
-    resolveFunctions: ResolverFunctionMap = { };
+    readonly schema: any;
+    private resolveFunctions: ResolverFunctionMap = { };
 
     constructor() {
-        this.addQueryFields(
-            {
-                name: 'me',
-                properties: {
-                    type: User,
-                    resolve: (parent: any, args: any) => users[0]
-                }
-            });
+        const config = new GraphQLObjectType({ name: 'Query' }).toConfig();
+        config.fields['_'] = GqlProvider.createFreshDummyField();
+        this.schema = new GraphQLSchema({ query: new GraphQLObjectType(config) });
     }
 
-    private addQueryFields = (...arrArgs: Array<Field>): GqlProvider => {
-        for (let i = 0; i < arrArgs.length; i++) {
-            let fieldDummy = GqlProvider.createFreshDummyField();
-            let name = arrArgs[i].name;
-            let properties = arrArgs[i].properties;
-            let field = fieldDummy;
-            field.type = properties.type;
-            field.args = properties.args;
-            field.resolve = properties.resolve;
-            this.config.fields[name] = field;
-        }
-
-        this.schema = new GraphQLSchema({ query: new GraphQLObjectType(this.config) });
-        return this;
+    private static createFreshDummyField = () => {
+        const dummyField = new GraphQLObjectType({name: '_', fields: {dummy: {}}}).toConfig().fields.dummy;
+        dummyField.type = new GraphQLObjectType({
+            name: '_',
+            fields: () => ({
+                id: { type: GraphQLID },
+                username: { type: GraphQLString },
+                email: { type: GraphQLString },
+                role: { type: GraphQLString }
+            })
+        });
+        return dummyField;
     }
-
-    private static createFreshDummyField = () =>
-        new GraphQLObjectType({ name: '_', fields: { dummy: {} } }).toConfig().fields.dummy;
 
     executeFn = (ob: any): Array<any> => {
         const args = GqlProvider.parse(ob.selectionSet);
@@ -80,16 +61,37 @@ export class GqlProvider {
         return retArr;
     }
 
+    setResolveFunctions = (...arrArgs: Array<Field>) => {
+        for (let i = 0; i < arrArgs.length; i++) {
+            const field = arrArgs[i];
+            this.resolveFunctions[field.name] = field.fn;
+        }
+    }
+
+    // Currently recursive - interim
     private static parse = (selectionSet: any): Array<ResolveField> => {
-        const selections = selectionSet.selections;
         const retArr = new Array<ResolveField>();
+        if (!selectionSet)
+            return retArr;
+
+        let selections = selectionSet.selections;
         for (let i = 0; i < selections.length; i++) {
             const selection = selections[i];
             const fieldName = selection.name.value;
             const args = GqlProvider.parseInner(selection);
+
+            const argsSelection = GqlProvider.parse(selection.selectionSet);
+            const selections1 = new Array<ResolveArg>();
+            if (argsSelection.length > 0) {
+                const names: Array<string> = argsSelection.map(ob => ob.name);
+                for (let j = 0; j < argsSelection.length; j++)
+                    selections1.push({ name: names[i], value: undefined, type: '' });
+            }
+
             const resolveField: ResolveField = {
                 name: fieldName,
-                args: args
+                args: args,
+                selections: selections1
             };
             retArr.push(resolveField);
         }
