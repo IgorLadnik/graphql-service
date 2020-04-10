@@ -1,3 +1,5 @@
+import {ChatMessage, User} from "./schema";
+
 const graphql = require('graphql');
 const {
     GraphQLObjectType,
@@ -50,61 +52,53 @@ export class GqlProvider {
         this.arrResolveField = new Array<ResolveField>();
         this.parse('', ob.selectionSet);
 
-        let depth = -1;
-        let arrObj = new Array<any>();
-        for (let i = 0; i < this.arrResolveField.length; i++) {
-            depth++;
-            let fields = _.filter(this.arrResolveField, rf => rf.depth === depth);
-            for (let j = 0; j < fields.length; j++) {
-                let field = fields[j];
-
+        let depth = 0;
+        let arrFinal = new Array<any>();
+        let count = 0;
+        while (count < this.arrResolveField.length) {
+            let fields = _.filter(this.arrResolveField, o => o.depth === depth);
+            for (let i = 0; i < fields.length; i++) {
+                count++;
+                let field = fields[i];
                 let resolveField = this.resolveFields[field.name];
-                if (resolveField?.fn) {
-                    // Resolve function is assigned
-                    try {
-                        arrObj.push({ depth, fieldName: field.name, result: resolveField.fn(field) });
-                        arrObj = _.flatten(arrObj);
-                    }
-                    catch (err) {
-                        console.log(`Error on calling resolve function for \"${field.name}\" field: ${err}`);
-                    }
+
+                arrFinal.push({ depth, parentName: field.parentName, fieldName: field.name, result: resolveField?.fn(field) });
+
+                if (field.parentName.length > 0) {
+                    let parentType = this.getType(field.parentName);
+                    let parentFields = parentType.getFields();
+                    let fieldObj = parentFields[field.name];
+                    arrFinal.push({ depth, parentName: field.parentName, fieldName: field.name,
+                        result: fieldObj.resolve ? fieldObj.resolve(parentType) : fieldObj });
                 }
-                else {
-                    // Resolve function is not assigned
-                    const arr = _.filter(arrObj, ob =>ob.depth === depth - 1);
-                    const parentFields = this.getParentType(field.parentName)?.getFields();
 
-                    if (!parentFields) {
-                        let o = 0;
-                    }
-
-                    for (let k = 0; k < arr?.length; k++) {
-                        const objk = arrObj[k];
-                        for (let x = 0; x < objk.result.length; x++) {
-                            const objx = objk.result[x];
-                            objx[`$_${field.name}`] = parentFields && parentFields[field.name].resolve
-                                ? parentFields[field.name].resolve(objx)
-                                : objx[field.name];
-                            //let o = 0;
-                        }
-                    }
-                 }
+                let t = 0;
             }
+
+            depth++;
         }
 
-        return JSON.stringify(arrObj.map(o => o.result)); //TEMP
+        return JSON.stringify(arrFinal[0]);
     }
 
-    private getParentType = (fieldParentName: string) => {
-        let resolveField = this.resolveFields[fieldParentName];
-        if (!resolveField)
+    private getType = (fieldName: string) => {
+        let resolveField = this.resolveFields[fieldName];
+        if (!resolveField) {
+
+            switch (fieldName) {
+                case 'participants': return User;
+                case 'author': return User;
+                case 'messages': return ChatMessage;
+            }
+
             return undefined;
+        }
 
         let typeName = resolveField.type.name;
         if (!typeName)
             typeName = resolveField.type.ofType.name;
 
-        return _.filter(this.arrGqlObject, ob =>ob.name === typeName)[0];
+        return _.filter(this.arrGqlObject, ob => ob.name === typeName)[0];
     }
 
     setResolveFunctions = (...arrArgs: Array<Field>): GqlProvider => {
