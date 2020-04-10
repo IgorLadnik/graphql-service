@@ -7,18 +7,18 @@ const {
 } = graphql;
 import _ from 'lodash';
 
-export interface ResolverFunctionMap {
-    [fieldName: string]: ResolveFunction;
+export interface ResolveFieldsMap {
+    [fieldName: string]: Field;
 }
 
-export type Field = { name: string, fn: ResolveFunction };
+export type Field = { name: string, type: any, fn: ResolveFunction };
 export type ResolveField = { parentName: string, depth: number, name: string, args: Array<ResolveArg>, argsSelection: Array<ResolveField> };
 export type ResolveArg = { name: string, value: any, type: string };
 export type ResolveFunction = (args: ResolveField) => any;
 
 export class GqlProvider {
     readonly schema: any;
-    private resolveFunctions: ResolverFunctionMap = { };
+    private resolveFields: ResolveFieldsMap = { };
     private indent: string;
     private currentDepth: number;
     private arrResolveField: Array<ResolveField>;
@@ -49,38 +49,61 @@ export class GqlProvider {
         this.currentDepth = -1;
         this.arrResolveField = new Array<ResolveField>();
         this.parse('', ob.selectionSet);
-        const resolvedField = _.filter(this.arrResolveField, rf => rf.depth === 0)[0];
-        return this.resolveFunctions[resolvedField.name](resolvedField);
 
-        //const retArr = new Array<any>();
-        // for (let i = 0; i < this.arrResolveField.length; i++) {
-        //     const fieldName = this.arrResolveField[i].name;
-        //     const fn = this.resolveFunctions[fieldName];
-        //     if (fn) {
-        //         try {
-        //             retArr.push({name: fieldName, value: fn(this.arrResolveField[i])});
-        //         }
-        //         catch (err) {
-        //             retArr.push({name: fieldName, value: `Error on \"${fieldName}\" resolver execution: ${err}`});
-        //         }
-        //     }
-        //     else
-        //         retArr.push({name: fieldName, value: `Error on \"${fieldName}\": resolve function is not defined`});
-        // }
-        //
-        // return retArr;
+        let retStr = '';
+        let depth = -1;
+        let arrObj = new Array<any>();
+        for (let i = 0; i < this.arrResolveField.length; i++) {
+            depth++;
+            let fields = _.filter(this.arrResolveField, rf => rf.depth === depth);
+            for (let j = 0; j < fields.length; j++) {
+                let field = fields[j];
+
+                let resolveField = this.resolveFields[field.name];
+                if (resolveField?.fn) {
+                    // Resolve function is assigned
+                    try {
+                        arrObj.push({ depth, fieldName: field.name, result: resolveField.fn(field) });
+                        arrObj = _.flatten(arrObj);
+                    }
+                    catch (err) {
+                        console.log(`Error on calling resolve function for \"${field.name}\" field: ${err}`);
+                    }
+                }
+                else {
+                    // Resolve function is not assigned
+                    //const parentFields = this.getParentType(field.parentName).getFields();
+                    for (let k = 0; k < arrObj.length; k++) {
+                        const obj = arrObj[k];
+                        const theField = obj.result[field.name];
+                        let o = 0;
+                    }
+                 }
+            }
+        }
+
+        return JSON.stringify(arrObj.map(o => o.result)); //TEMP
     }
+
+    // private getParentType = (fieldParentName: string) => {
+    //     let resolveField = this.resolveFields[fieldParentName];
+    //     let typeName = resolveField.type.name;
+    //     if (!typeName)
+    //         typeName = resolveField.type.ofType.name;
+    //
+    //     return _.filter(this.arrGqlObject, ob =>ob.name === typeName)[0];
+    // }
 
     setResolveFunctions = (...arrArgs: Array<Field>): GqlProvider => {
         for (let i = 0; i < arrArgs.length; i++) {
             const field = arrArgs[i];
-            this.resolveFunctions[field.name] = field.fn;
+            this.resolveFields[field.name] = field;
         }
 
         return this;
     }
 
-    setGqjObjects = (...arrArgs: Array<any>): GqlProvider => {
+    setGqlObjects = (...arrArgs: Array<any>): GqlProvider => {
         for (let i = 0; i < arrArgs.length; i++) {
             const ob = arrArgs[i];
             if (ob.isTypeOf === GraphQLObjectType)
@@ -90,7 +113,7 @@ export class GqlProvider {
         return this;
     }
 
-    getGqjObject = (i: number): any =>
+    getGqlObject = (i: number): any =>
         this.arrGqlObject.length > i ? this.arrGqlObject[i] : null;
 
     // Currently recursive - interim

@@ -5,6 +5,15 @@ import graphqlHTTP from 'express-graphql';
 import { GqlProvider} from './gqlProvider';
 import { User, Chat, ChatMessage, Role } from './schema';
 import { ExecutionArgs, GraphQLError } from "graphql";
+const graphql = require('graphql');
+const {
+    GraphQLObjectType,
+    GraphQLString,
+    GraphQLSchema,
+    GraphQLID,
+    GraphQLInt,
+    GraphQLList,
+} = graphql;
 import _ from 'lodash';
 
 (async function main()
@@ -14,8 +23,7 @@ import _ from 'lodash';
     app.use('*', cors());
     app.use(compression());
 
-    const gqlProvider = new GqlProvider().setGqjObjects(User, Chat, ChatMessage);
-    const nn = gqlProvider.arrGqlObject[0].name;
+    const gqlProvider = new GqlProvider().setGqlObjects(User, Chat, ChatMessage);
 
     app.use('/graphql', graphqlHTTP({
         schema: gqlProvider.schema,
@@ -46,13 +54,23 @@ import _ from 'lodash';
     gqlProvider.setResolveFunctions(
         {
             name: 'user',
+            type: User,
             fn: (args) =>
-                JSON.stringify(users[args.args[0].value])
+                //JSON.stringify(users[args.args[0].value])
+                users[args.args[0].value]
         },
         {
             name: 'myChats',
-            fn: (args) =>
-                JSON.stringify(chats) //TEMP
+            type: new GraphQLList(Chat),
+            fn: (args) => {
+                const arrChat = new Array<any>();
+                for (let i = 0; i < chats.length; i++) {
+                    if (_.filter(chats[i].messages, m => m.author.id === '0').length > 0)
+                        arrChat.push(chats[i]);
+                }
+
+                return arrChat;
+            }
         },
     );
 })();
@@ -75,7 +93,7 @@ export const chatMessages = [
 export const chats = [
     { name: 'Chat', id: '0', participants: [users[0], users[1], users[2]], messages: [chatMessages[0], chatMessages[1]] },
     { name: 'Chat', id: '1', participants: [users[1], users[0]], messages: [chatMessages[1], chatMessages[2], chatMessages[3]] },
-    { name: 'Chat', id: '2', participants: [users[0], users[1]], messages: [chatMessages[2], chatMessages[1]] },
+    { name: 'Chat', id: '2', participants: [users[0], users[1]], messages: [chatMessages[4], chatMessages[1]] },
     { name: 'Chat', id: '3', participants: [users[2], users[0]], messages: [chatMessages[4], chatMessages[1], chatMessages[2]] },
 ];
 // -----------------------------------------------------------------------------------------

@@ -1,5 +1,4 @@
 const graphql = require('graphql');
-const _ = require('lodash');
 const {
     GraphQLObjectType,
     GraphQLString,
@@ -8,6 +7,7 @@ const {
     GraphQLInt,
     GraphQLList,
 } = graphql;
+const _ = require('lodash');
 
 export const Role = {
     User: 'USER',
