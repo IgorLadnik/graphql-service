@@ -50,7 +50,6 @@ export class GqlProvider {
         this.arrResolveField = new Array<ResolveField>();
         this.parse('', ob.selectionSet);
 
-        let retStr = '';
         let depth = -1;
         let arrObj = new Array<any>();
         for (let i = 0; i < this.arrResolveField.length; i++) {
@@ -72,11 +71,22 @@ export class GqlProvider {
                 }
                 else {
                     // Resolve function is not assigned
-                    //const parentFields = this.getParentType(field.parentName).getFields();
-                    for (let k = 0; k < arrObj.length; k++) {
-                        const obj = arrObj[k];
-                        const theField = obj.result[field.name];
+                    const arr = _.filter(arrObj, ob =>ob.depth === depth - 1);
+                    const parentFields = this.getParentType(field.parentName)?.getFields();
+
+                    if (!parentFields) {
                         let o = 0;
+                    }
+
+                    for (let k = 0; k < arr?.length; k++) {
+                        const objk = arrObj[k];
+                        for (let x = 0; x < objk.result.length; x++) {
+                            const objx = objk.result[x];
+                            objx[`$_${field.name}`] = parentFields && parentFields[field.name].resolve
+                                ? parentFields[field.name].resolve(objx)
+                                : objx[field.name];
+                            //let o = 0;
+                        }
                     }
                  }
             }
@@ -85,14 +95,17 @@ export class GqlProvider {
         return JSON.stringify(arrObj.map(o => o.result)); //TEMP
     }
 
-    // private getParentType = (fieldParentName: string) => {
-    //     let resolveField = this.resolveFields[fieldParentName];
-    //     let typeName = resolveField.type.name;
-    //     if (!typeName)
-    //         typeName = resolveField.type.ofType.name;
-    //
-    //     return _.filter(this.arrGqlObject, ob =>ob.name === typeName)[0];
-    // }
+    private getParentType = (fieldParentName: string) => {
+        let resolveField = this.resolveFields[fieldParentName];
+        if (!resolveField)
+            return undefined;
+
+        let typeName = resolveField.type.name;
+        if (!typeName)
+            typeName = resolveField.type.ofType.name;
+
+        return _.filter(this.arrGqlObject, ob =>ob.name === typeName)[0];
+    }
 
     setResolveFunctions = (...arrArgs: Array<Field>): GqlProvider => {
         for (let i = 0; i < arrArgs.length; i++) {
