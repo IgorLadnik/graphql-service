@@ -126,7 +126,7 @@ export class GqlProvider {
         return this;
     }
 
-    getGqlObject = (i: number): any =>
+    private getGqlObject = (i: number): any =>
         this.arrGqlObject.length > i ? this.arrGqlObject[i] : null;
 
     // Recursive
