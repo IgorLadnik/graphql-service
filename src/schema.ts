@@ -32,7 +32,11 @@ export const ChatMessage = new GraphQLObjectType({
         id: { type: GraphQLID },
         content: { type: GraphQLString },
         time: { type: GraphQLString },
-        author: { type: User },
+        author: {
+            type: User
+            // resolve:
+            //     (parent: any, args: any) => ...
+        },
     })
 });
 
@@ -43,13 +47,13 @@ export const Chat = new GraphQLObjectType({
         id: { type: GraphQLID },
         participants: {
             type: new GraphQLList(User),
-            resolve:
-                (parent: any, args: any) => parent.participants
+            // resolve:
+            //     (parent: any, args: any) => parent.participants
         },
         messages: {
             type: new GraphQLList(ChatMessage),
-            resolve:
-                (parent: any, args: any) => parent.messages
+            // resolve:
+            //     (parent: any, args: any) => parent.messages
         }
     })
 });

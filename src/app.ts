@@ -53,12 +53,13 @@ import _ from 'lodash';
 
     // Settings for gqlProvider.
     // Placed after start listening for test purposes.
+    // For now these are dummy functions, args are not yest provided
     gqlProvider
         .setGqlObjects(User, Chat, ChatMessage)
         .setFieldToTypeMapping(
-            { field: 'participants', type: User },
+            { field: 'participants', type: User }, // regardless list
             { field: 'author', type: User },
-            { field: 'messages', type: ChatMessage },
+            { field: 'messages', type: ChatMessage }, // regardless list
         )
         .setResolveFunctionsForFields(
             {
@@ -78,6 +79,21 @@ import _ from 'lodash';
 
                     return arrChat;
                 }
+            },
+            {
+                name: 'participants',
+                type: GraphQLList(User),
+                fn: (args) => users
+            },
+            {
+                name: 'messages',
+                type: GraphQLList(ChatMessage),
+                fn: (args) => chatMessages
+            },
+            {
+                name: 'author',
+                type: User,
+                fn: (args) => users[0]
             },
         );
 })();

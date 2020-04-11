@@ -86,16 +86,20 @@ export class GqlProvider {
         return JSON.stringify(arrFinal[0]);
     }
 
+    // Return either type object.
+    // In case of list returns item's type object
     private getType = (fieldName: string) => {
         let resolveField = this.resolveFields[fieldName];
-        if (!resolveField) //{
+        if (!resolveField)
             return this.fieldToTypeMap[fieldName];
 
         let typeName = resolveField.type.name;
         if (!typeName)
+            // In case of list
             typeName = resolveField.type.ofType.name;
 
-        return _.filter(this.arrGqlObject, ob => ob.name === typeName)[0];
+        // Field name coincides with type name (regardless letter case)
+        return _.filter(this.arrGqlObject, ob => ob.name.toLowerCase() === typeName.toLowerCase())[0];
     }
 
     setFieldToTypeMapping = (...arrArgs: Array<any>): GqlProvider => {
@@ -126,6 +130,21 @@ export class GqlProvider {
         return this;
     }
 
+    private getResolveFunction = (fieldName: string): any => {
+        //let type = this.getType(fieldName);
+        //let fieldObj = type.getFields()[fieldName];
+        const field = this.resolveFields[fieldName];
+        if (field && field.fn)
+            return field.fn;
+        else {
+            const type = this.getType(fieldName);
+            if (type && type.resolve)
+                return type.resolve;
+        }
+
+        return null;
+    }
+
     private getGqlObject = (i: number): any =>
         this.arrGqlObject.length > i ? this.arrGqlObject[i] : null;
 
@@ -143,6 +162,12 @@ export class GqlProvider {
             const selection = selections[i];
             const fieldName = selection.name.value;
             const args = GqlProvider.parseInner(selection);
+
+            // For future use ----
+            let type = this.getType(fieldName);
+            let fn = this.getResolveFunction(fieldName);
+            //--------------------
+
             const argsSelection = this.parse(fieldName, selection.selectionSet);
 
             console.log(`fieldName = ${this.currentDepth} ${this.indent}\"${fieldName}\"`);
