@@ -23,7 +23,7 @@ import _ from 'lodash';
     app.use('*', cors());
     app.use(compression());
 
-    const gqlProvider = new GqlProvider().setGqlObjects(User, Chat, ChatMessage);
+    const gqlProvider = new GqlProvider();
 
     app.use('/graphql', graphqlHTTP({
         schema: gqlProvider.schema,
@@ -51,28 +51,35 @@ import _ from 'lodash';
         console.log(`\n*** Error to listen on ${address}. ${err}`)
     }
 
-    gqlProvider.setResolveFunctions(
-        {
-            name: 'user',
-            type: User,
-            fn: (args) =>
-                //JSON.stringify(users[args.args[0].value])
-                users[args.args[0].value]
-        },
-        {
-            name: 'myChats',
-            type: new GraphQLList(Chat),
-            fn: (args) => {
-                const arrChat = new Array<any>();
-                for (let i = 0; i < chats.length; i++) {
-                    if (_.filter(chats[i].messages, m => m.author.id === '0').length > 0)
-                        arrChat.push(chats[i]);
-                }
+    // Settings for gqlProvider.
+    // Placed after start listening for test purposes.
+    gqlProvider
+        .setGqlObjects(User, Chat, ChatMessage)
+        .setFieldToTypeMapping(
+            { field: 'participants', type: User },
+            { field: 'author', type: User },
+            { field: 'messages', type: ChatMessage },
+        )
+        .setResolveFunctionsForFields(
+            {
+                name: 'user',
+                type: User,
+                fn: (args) => users[args.args[0].value]
+            },
+            {
+                name: 'myChats',
+                type: new GraphQLList(Chat),
+                fn: (args) => {
+                    const arrChat = new Array<any>();
+                    for (let i = 0; i < chats.length; i++) {
+                        if (_.filter(chats[i].messages, m => m.author.id === '0').length > 0)
+                            arrChat.push(chats[i]);
+                    }
 
-                return arrChat;
-            }
-        },
-    );
+                    return arrChat;
+                }
+            },
+        );
 })();
 
 // Test Data ------------------------------------------------------------------------------------

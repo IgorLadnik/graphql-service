@@ -13,6 +13,10 @@ export interface ResolveFieldsMap {
     [fieldName: string]: Field;
 }
 
+export interface FieldToTypeMap {
+    [fieldName: string]: any;
+}
+
 export type Field = { name: string, type: any, fn: ResolveFunction };
 export type ResolveField = { parentName: string, depth: number, name: string, args: Array<ResolveArg>, argsSelection: Array<ResolveField> };
 export type ResolveArg = { name: string, value: any, type: string };
@@ -25,6 +29,7 @@ export class GqlProvider {
     private currentDepth: number;
     private arrResolveField: Array<ResolveField>;
     private arrGqlObject = new Array<any>();
+    private fieldToTypeMap: FieldToTypeMap = { };
 
     constructor() {
         const config = new GraphQLObjectType({ name: 'Query' }).toConfig();
@@ -83,16 +88,8 @@ export class GqlProvider {
 
     private getType = (fieldName: string) => {
         let resolveField = this.resolveFields[fieldName];
-        if (!resolveField) {
-
-            switch (fieldName) {
-                case 'participants': return User;
-                case 'author': return User;
-                case 'messages': return ChatMessage;
-            }
-
-            return undefined;
-        }
+        if (!resolveField) //{
+            return this.fieldToTypeMap[fieldName];
 
         let typeName = resolveField.type.name;
         if (!typeName)
@@ -101,7 +98,16 @@ export class GqlProvider {
         return _.filter(this.arrGqlObject, ob => ob.name === typeName)[0];
     }
 
-    setResolveFunctions = (...arrArgs: Array<Field>): GqlProvider => {
+    setFieldToTypeMapping = (...arrArgs: Array<any>): GqlProvider => {
+        for (let i = 0; i < arrArgs.length; i++) {
+            const item = arrArgs[i];
+            this.fieldToTypeMap[item.field] = item.type;
+        }
+
+        return this;
+    }
+
+    setResolveFunctionsForFields = (...arrArgs: Array<Field>): GqlProvider => {
         for (let i = 0; i < arrArgs.length; i++) {
             const field = arrArgs[i];
             this.resolveFields[field.name] = field;
@@ -123,7 +129,7 @@ export class GqlProvider {
     getGqlObject = (i: number): any =>
         this.arrGqlObject.length > i ? this.arrGqlObject[i] : null;
 
-    // Currently recursive - interim
+    // Recursive
     private parse = (parentName: string, selectionSet: any): Array<ResolveField> => {
         const retArr = new Array<ResolveField>();
         if (!selectionSet)
@@ -136,7 +142,7 @@ export class GqlProvider {
         for (let i = 0; i < selections.length; i++) {
             const selection = selections[i];
             const fieldName = selection.name.value;
-            const args = this.parseInner(selection);
+            const args = GqlProvider.parseInner(selection);
             const argsSelection = this.parse(fieldName, selection.selectionSet);
 
             console.log(`fieldName = ${this.currentDepth} ${this.indent}\"${fieldName}\"`);
@@ -158,7 +164,7 @@ export class GqlProvider {
         return retArr;
     }
 
-    private parseInner = (selection: any): Array<ResolveArg> => {
+    private static parseInner = (selection: any): Array<ResolveArg> => {
         const resolveArgs = new Array<ResolveArg>();
         for (let j = 0; j < selection.arguments.length; j++) {
             const argument = selection.arguments[j];
