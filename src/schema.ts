@@ -1,19 +1,20 @@
-const graphql = require('graphql');
-const {
-    GraphQLObjectType,
-    GraphQLString,
-    GraphQLSchema,
-    GraphQLID,
-    GraphQLInt,
-    GraphQLList,
-} = graphql;
-const _ = require('lodash');
+// const graphql = require('graphql');
+// const {
+//     GraphQLObjectType,
+//     GraphQLString,
+//     GraphQLSchema,
+//     GraphQLID,
+//     GraphQLInt,
+//     GraphQLList,
+// } = graphql;
+// const _ = require('lodash');
 
 export const Role = {
     User: 'USER',
     Admin: 'ADMIN'
 };
 
+/*
 export const User = new GraphQLObjectType({
     name: 'User',
     isTypeOf: GraphQLObjectType,
@@ -57,3 +58,4 @@ export const Chat = new GraphQLObjectType({
         }
     })
 });
+*/
