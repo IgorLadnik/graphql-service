@@ -63,13 +63,15 @@ import _ from 'lodash';
         .setResolveFunctionsForFields(
             {
                 name: 'user',
-                type: User,
+                // type: User,
+                isArray: false,
                 fn: (args) =>
                     users[args.id]
             },
             {
                 name: 'myChats',
-                type: new GraphQLList(Chat),
+                // type: Chat,
+                isArray: true,
                 fn: (args) => {
                     const arrChat = new Array<any>();
                     for (let i = 0; i < chats.length; i++) {
@@ -82,18 +84,24 @@ import _ from 'lodash';
             },
             {
                 name: 'participants',
-                type: GraphQLList(User),
-                fn: (args) => users
+                // type: User,
+                isArray: true,
+                fn: (args) =>
+                    users[1]
             },
             {
                 name: 'messages',
-                type: GraphQLList(ChatMessage),
-                fn: (args) => chatMessages
+                // type: ChatMessage,
+                isArray: true,
+                fn: (args) =>
+                    chatMessages[0]
             },
             {
                 name: 'author',
-                type: User,
-                fn: (args) => users[0]
+                // type: User,
+                isArray: false,
+                fn: (args) =>
+                    users[0]
             },
         );
 })();

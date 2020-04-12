@@ -18,7 +18,7 @@ export interface FieldToTypeMap {
     [fieldName: string]: any;
 }
 
-export type Field = { name: string, type: any, fn: ResolveFunction };
+export type Field = { name: string, /*type: any,*/ isArray: boolean, fn: ResolveFunction };
 //export type ResolveField = { parentName: string, depth: number, name: string, args: any, argsSelection: Array<ResolveField> };
 //export type ResolveArg = { name: string, value: any, type: string };
 export type ResolveFunction = (args: any) => any;
@@ -44,10 +44,7 @@ export class GqlProvider {
         dummyField.type = new GraphQLObjectType({
             name: '_',
             fields: () => ({
-                id: { type: GraphQLID },
-                username: { type: GraphQLString },
-                email: { type: GraphQLString },
-                role: { type: GraphQLString }
+                id: { type: GraphQLID }
             })
         });
         return dummyField;
@@ -60,7 +57,7 @@ export class GqlProvider {
     }
 
     // Recursive
-    private parse = (parentName: string, ob: /*OperationDefinitionNode*/any) => {
+    private parse = (parentName: string, ob: /*OperationDefinitionNode*/any, parents: Array<any> = new Array<any>()) => {
         let selectionSet = ob?.selectionSet;
         if (!selectionSet)
             return Array<any>();
@@ -74,31 +71,39 @@ export class GqlProvider {
             const fieldName = selection.name.value;
             const args = GqlProvider.parseInner(selection);
 
-            // For future use ----
-            let type = this.getType(fieldName);
-            let fn = this.getResolveFunction(fieldName);
-            //--------------------
+            const field = this.resolveFields[fieldName];
 
-            console.log(`depth: ${this.currentDepth} fieldName:  ${this.indent}\"${fieldName}\" isResolveFunction: ${_.isFunction(fn)}`);
+            console.log(`depth: ${this.currentDepth} fieldName:  ${this.indent}\"${fieldName}\" isResolveFunction: ${_.isFunction(field?.fn)}`);
 
-            const result = _.isFunction(fn) ? fn(args) : undefined;
+            let currentParents = new Array<any>();
+            const n = this.currentDepth === 0 ? 1 : parents.length;
+            for (let j = 0; j < n; j++) {
+                const parent = parents[j];
+                const result = _.isFunction(field?.fn) ? field?.fn(args) : parent[fieldName];
 
-            if (result) {
-                let arrResult = new Array<any>();
+                if (result) {
+                    let lResult: any = result;
+                    if (field?.isArray) {
+                        lResult = new Array<any>();
 
-                if (_.isArray(result))
-                    arrResult = result;
-                else
-                    arrResult.push(result);
+                        if (_.isArray(result))
+                            lResult = result;
+                        else
+                            lResult.push(result);
+                    }
 
-                if (this.currentDepth === 0)
-                    this.result = arrResult;
-                else {
-
+                    if (this.currentDepth === 0) {
+                        this.result = lResult;
+                        currentParents = lResult;
+                    }
+                    else {
+                        parent[fieldName] = lResult;
+                        currentParents.push(parent[fieldName]);
+                    }
                 }
             }
 
-            this.parse(fieldName, selection);
+            this.parse(fieldName, selection, currentParents);
         }
 
         this.indent = this.indent.substr(1, this.indent.length - 1);
@@ -115,21 +120,21 @@ export class GqlProvider {
         return resolveArgs;
     }
 
-    // Return either type object.
-    // In case of list returns item's type object
-    private getType = (fieldName: string) => {
-        let resolveField = this.resolveFields[fieldName];
-        if (!resolveField)
-            return this.fieldToTypeMap[fieldName];
-
-        let typeName = resolveField.type.name;
-        if (!typeName)
-            // In case of list
-            typeName = resolveField.type.ofType.name;
-
-        // Field name coincides with type name (regardless letter case)
-        return _.filter(this.arrGqlObject, ob => ob.name.toLowerCase() === typeName.toLowerCase())[0];
-    }
+    // // Return either type object.
+    // // In case of list returns item's type object
+    // private getType = (fieldName: string) => {
+    //     let resolveField = this.resolveFields[fieldName];
+    //     if (!resolveField)
+    //         return this.fieldToTypeMap[fieldName];
+    //
+    //     let typeName = resolveField.type.name;
+    //     if (!typeName)
+    //         // In case of list
+    //         typeName = resolveField.type.ofType.name;
+    //
+    //     // Field name coincides with type name (regardless letter case)
+    //     return _.filter(this.arrGqlObject, ob => ob.name.toLowerCase() === typeName.toLowerCase())[0];
+    // }
 
     setFieldToTypeMapping = (...arrArgs: Array<any>): GqlProvider => {
         for (let i = 0; i < arrArgs.length; i++) {
@@ -159,21 +164,21 @@ export class GqlProvider {
         return this;
     }
 
-    private getResolveFunction = (fieldName: string): any => {
-        //let type = this.getType(fieldName);
-        //let fieldObj = type.getFields()[fieldName];
-        const field = this.resolveFields[fieldName];
-        if (field && field.fn)
-            return field.fn;
-        else {
-            const type = this.getType(fieldName);
-            if (type && type.resolve)
-                return type.resolve;
-        }
+    // private getFieldInfo = (fieldName: string): any => {
+    //     //let type = this.getType(fieldName);
+    //     //let fieldObj = type.getFields()[fieldName];
+    //     const field = this.resolveFields[fieldName];
+    //     if (field && field.fn)
+    //         return field.fn;
+    //     // else {
+    //     //     const type = this.getType(fieldName);
+    //     //     if (type && type.resolve)
+    //     //         return type.resolve;
+    //     // }
+    //
+    //     return null;
+    // }
 
-        return null;
-    }
-
-    private getGqlObject = (i: number): any =>
-        this.arrGqlObject.length > i ? this.arrGqlObject[i] : null;
+    // private getGqlObject = (i: number): any =>
+    //     this.arrGqlObject.length > i ? this.arrGqlObject[i] : null;
 }
