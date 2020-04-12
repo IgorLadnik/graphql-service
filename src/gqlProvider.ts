@@ -19,16 +19,13 @@ export interface FieldToTypeMap {
 }
 
 export type Field = { name: string, /*type: any,*/ isArray: boolean, fn: ResolveFunction };
-//export type ResolveField = { parentName: string, depth: number, name: string, args: any, argsSelection: Array<ResolveField> };
-//export type ResolveArg = { name: string, value: any, type: string };
-export type ResolveFunction = (args: any) => any;
+export type ResolveFunction = (parent: any, args: any) => any;
 
 export class GqlProvider {
     readonly schema: any;
     private resolveFields: ResolveFieldsMap = { };
     private indent = '';
     private currentDepth = -1;
-    //private arrResolveField: Array<ResolveField>;
     private arrGqlObject = new Array<any>();
     private fieldToTypeMap: FieldToTypeMap = { };
     private result: Array<any>;
@@ -79,7 +76,7 @@ export class GqlProvider {
             const n = this.currentDepth === 0 ? 1 : parents.length;
             for (let j = 0; j < n; j++) {
                 const parent = parents[j];
-                const result = _.isFunction(field?.fn) ? field?.fn(args) : parent[fieldName];
+                const result = _.isFunction(field?.fn) ? field?.fn(parent, args) : parent[fieldName];
 
                 if (result) {
                     let lResult: any = result;
@@ -164,21 +161,6 @@ export class GqlProvider {
         return this;
     }
 
-    // private getFieldInfo = (fieldName: string): any => {
-    //     //let type = this.getType(fieldName);
-    //     //let fieldObj = type.getFields()[fieldName];
-    //     const field = this.resolveFields[fieldName];
-    //     if (field && field.fn)
-    //         return field.fn;
-    //     // else {
-    //     //     const type = this.getType(fieldName);
-    //     //     if (type && type.resolve)
-    //     //         return type.resolve;
-    //     // }
-    //
-    //     return null;
-    // }
-
-    // private getGqlObject = (i: number): any =>
-    //     this.arrGqlObject.length > i ? this.arrGqlObject[i] : null;
+    private getGqlObject = (i: number): any =>
+        this.arrGqlObject.length > i ? this.arrGqlObject[i] : null;
 }

@@ -65,14 +65,14 @@ import _ from 'lodash';
                 name: 'user',
                 // type: User,
                 isArray: false,
-                fn: (args) =>
+                fn: (parent, args) =>
                     users[args.id]
             },
             {
                 name: 'myChats',
                 // type: Chat,
                 isArray: true,
-                fn: (args) => {
+                fn: (parent, args) => {
                     const arrChat = new Array<any>();
                     for (let i = 0; i < chats.length; i++) {
                         if (_.filter(chats[i].messages, m => m.author.id === '0').length > 0)
@@ -86,22 +86,22 @@ import _ from 'lodash';
                 name: 'participants',
                 // type: User,
                 isArray: true,
-                fn: (args) =>
-                    users[1]
+                fn: (parent, args) =>
+                    parent.participants[0]
             },
             {
                 name: 'messages',
                 // type: ChatMessage,
                 isArray: true,
-                fn: (args) =>
-                    chatMessages[0]
+                fn: (parent, args) =>
+                    parent.messages[0]
             },
             {
                 name: 'author',
                 // type: User,
                 isArray: false,
-                fn: (args) =>
-                    users[0]
+                fn: (parent, args) =>
+                    parent.author[0]
             },
         );
 })();
