@@ -8,6 +8,7 @@ const {
     GraphQLID,
 } = graphql;
 import _ from 'lodash';
+//import { OperationDefinitionNode } from 'graphql/language/ast'
 
 export interface ResolveFieldsMap {
     [fieldName: string]: Field;
@@ -18,18 +19,19 @@ export interface FieldToTypeMap {
 }
 
 export type Field = { name: string, type: any, fn: ResolveFunction };
-export type ResolveField = { parentName: string, depth: number, name: string, args: Array<ResolveArg>, argsSelection: Array<ResolveField> };
-export type ResolveArg = { name: string, value: any, type: string };
-export type ResolveFunction = (args: ResolveField) => any;
+//export type ResolveField = { parentName: string, depth: number, name: string, args: any, argsSelection: Array<ResolveField> };
+//export type ResolveArg = { name: string, value: any, type: string };
+export type ResolveFunction = (args: any) => any;
 
 export class GqlProvider {
     readonly schema: any;
     private resolveFields: ResolveFieldsMap = { };
-    private indent: string;
-    private currentDepth: number;
-    private arrResolveField: Array<ResolveField>;
+    private indent = '';
+    private currentDepth = -1;
+    //private arrResolveField: Array<ResolveField>;
     private arrGqlObject = new Array<any>();
     private fieldToTypeMap: FieldToTypeMap = { };
+    private result: Array<any>;
 
     constructor() {
         const config = new GraphQLObjectType({ name: 'Query' }).toConfig();
@@ -52,38 +54,65 @@ export class GqlProvider {
     }
 
     executeFn = (ob: any): string => {
-        this.indent = '';
-        this.currentDepth = -1;
-        this.arrResolveField = new Array<ResolveField>();
-        this.parse('', ob.selectionSet);
+        console.log('--------------------------------------------------');
+        this.parse('', ob);
+        return JSON.stringify(this.result);
+    }
 
-        let depth = 0;
-        let arrFinal = new Array<any>();
-        let count = 0;
-        while (count < this.arrResolveField.length) {
-            let fields = _.filter(this.arrResolveField, o => o.depth === depth);
-            for (let i = 0; i < fields.length; i++) {
-                count++;
-                let field = fields[i];
-                let resolveField = this.resolveFields[field.name];
+    // Recursive
+    private parse = (parentName: string, ob: /*OperationDefinitionNode*/any) => {
+        let selectionSet = ob?.selectionSet;
+        if (!selectionSet)
+            return Array<any>();
 
-                arrFinal.push({ depth, parentName: field.parentName, fieldName: field.name, result: resolveField?.fn(field) });
+        this.indent += '\t';
+        this.currentDepth++;
 
-                if (field.parentName.length > 0) {
-                    let parentType = this.getType(field.parentName);
-                    let parentFields = parentType.getFields();
-                    let fieldObj = parentFields[field.name];
-                    arrFinal.push({ depth, parentName: field.parentName, fieldName: field.name,
-                        result: fieldObj.resolve ? fieldObj.resolve(parentType) : fieldObj });
+        let selections = selectionSet.selections;
+        for (let i = 0; i < selections.length; i++) {
+            const selection = selections[i];
+            const fieldName = selection.name.value;
+            const args = GqlProvider.parseInner(selection);
+
+            // For future use ----
+            let type = this.getType(fieldName);
+            let fn = this.getResolveFunction(fieldName);
+            //--------------------
+
+            console.log(`depth: ${this.currentDepth} fieldName:  ${this.indent}\"${fieldName}\" isResolveFunction: ${_.isFunction(fn)}`);
+
+            const result = _.isFunction(fn) ? fn(args) : undefined;
+
+            if (result) {
+                let arrResult = new Array<any>();
+
+                if (_.isArray(result))
+                    arrResult = result;
+                else
+                    arrResult.push(result);
+
+                if (this.currentDepth === 0)
+                    this.result = arrResult;
+                else {
+
                 }
-
-                let t = 0;
             }
 
-            depth++;
+            this.parse(fieldName, selection);
         }
 
-        return JSON.stringify(arrFinal[0]);
+        this.indent = this.indent.substr(1, this.indent.length - 1);
+        this.currentDepth--;
+    }
+
+    private static parseInner = (selection: any): any => {
+        let resolveArgs: any = { };
+        for (let i = 0; i < selection.arguments.length; i++) {
+            const argument = selection.arguments[i];
+            resolveArgs[argument.name.value] = parseInt(argument.value.value);
+        }
+
+        return resolveArgs;
     }
 
     // Return either type object.
@@ -147,73 +176,4 @@ export class GqlProvider {
 
     private getGqlObject = (i: number): any =>
         this.arrGqlObject.length > i ? this.arrGqlObject[i] : null;
-
-    // Recursive
-    private parse = (parentName: string, selectionSet: any): Array<ResolveField> => {
-        const retArr = new Array<ResolveField>();
-        if (!selectionSet)
-            return retArr;
-
-        this.indent += '\t';
-        this.currentDepth++;
-
-        let selections = selectionSet.selections;
-        for (let i = 0; i < selections.length; i++) {
-            const selection = selections[i];
-            const fieldName = selection.name.value;
-            const args = GqlProvider.parseInner(selection);
-
-            // For future use ----
-            let type = this.getType(fieldName);
-            let fn = this.getResolveFunction(fieldName);
-            //--------------------
-
-            console.log(`fieldName = ${this.currentDepth} ${this.indent}\"${fieldName}\"`);
-
-            const argsSelection = this.parse(fieldName, selection.selectionSet);
-
-            const resolveField: ResolveField = {
-                parentName,
-                depth: this.currentDepth,
-                name: fieldName,
-                args,
-                argsSelection
-            };
-
-            retArr.push(resolveField);
-            this.arrResolveField.push(resolveField);
-        }
-
-        this.indent = this.indent.substr(1, this.indent.length - 1);
-        this.currentDepth--;
-        return retArr;
-    }
-
-    private static parseInner = (selection: any): Array<ResolveArg> => {
-        const resolveArgs = new Array<ResolveArg>();
-        for (let j = 0; j < selection.arguments.length; j++) {
-            const argument = selection.arguments[j];
-            let resolveArg: ResolveArg;
-            switch (argument.value.kind) {
-                case 'IntValue':
-                    resolveArg = {
-                        name: argument.name.value,
-                        value: parseInt(argument.value.value),
-                        type: 'number',
-                    };
-                    break;
-                default:
-                    resolveArg = {
-                        name: argument.name.value,
-                        value: argument.value.value,
-                        type: 'string',
-                    };
-                    break;
-            }
-
-            resolveArgs.push(resolveArg);
-        }
-
-        return resolveArgs;
-    }
 }

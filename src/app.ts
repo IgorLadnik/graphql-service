@@ -30,7 +30,6 @@ import _ from 'lodash';
         graphiql: true,
 
         customExecuteFn: (args: ExecutionArgs): any =>
-            //gqlProvider.executeFn(args.document.definitions[0])[0].value,
             gqlProvider.executeFn(args.document.definitions[0]),
 
         customValidateFn: (schema, documentAST, validationRules): any =>
@@ -65,7 +64,8 @@ import _ from 'lodash';
             {
                 name: 'user',
                 type: User,
-                fn: (args) => users[args.args[0].value]
+                fn: (args) =>
+                    users[args.id]
             },
             {
                 name: 'myChats',
