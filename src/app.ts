@@ -3,17 +3,8 @@ import compression from 'compression';
 import cors from 'cors';
 import graphqlHTTP from 'express-graphql';
 import { GqlProvider} from './gqlProvider';
-import { User, Chat, ChatMessage, Role } from './schema';
+import { Role } from './schema';
 import { ExecutionArgs, GraphQLError } from "graphql";
-const graphql = require('graphql');
-const {
-    GraphQLObjectType,
-    GraphQLString,
-    GraphQLSchema,
-    GraphQLID,
-    GraphQLInt,
-    GraphQLList,
-} = graphql;
 import _ from 'lodash';
 
 (async function main()
@@ -53,57 +44,38 @@ import _ from 'lodash';
     // Settings for gqlProvider.
     // Placed after start listening for test purposes.
     // For now these are dummy functions, args are not yest provided
-    gqlProvider
-        .setGqlObjects(User, Chat, ChatMessage)
-        .setFieldToTypeMapping(
-            { field: 'participants', type: User }, // regardless list
-            { field: 'author', type: User },
-            { field: 'messages', type: ChatMessage }, // regardless list
-        )
-        .setResolveFunctionsForFields(
-            {
-                name: 'user',
-                // type: User,
-                isArray: false,
-                fn: (parent, args) =>
-                    users[args.id]
-            },
-            {
-                name: 'myChats',
-                // type: Chat,
-                isArray: true,
-                fn: (parent, args) => {
-                    const arrChat = new Array<any>();
-                    for (let i = 0; i < chats.length; i++) {
-                        if (_.filter(chats[i].messages, m => m.author.id === '0').length > 0)
-                            arrChat.push(chats[i]);
-                    }
-
-                    return arrChat;
-                }
-            },
-            {
-                name: 'participants',
-                // type: User,
-                isArray: true,
-                fn: (parent, args) =>
-                    parent.participants[0]
-            },
-            {
-                name: 'messages',
-                // type: ChatMessage,
-                isArray: true,
-                fn: (parent, args) =>
-                    parent.messages[0]
-            },
-            {
-                name: 'author',
-                // type: User,
-                isArray: false,
-                fn: (parent, args) =>
-                    parent.author[0]
-            },
-        );
+    gqlProvider.setResolveFunctionsForFields(
+        {
+            name: 'user',
+            isArray: false,
+            fn: (parent, args) =>
+                users[args.id]
+        },
+        {
+            name: 'myChats',
+            isArray: true,
+            fn: (parent, args) =>
+                [chats[0], chats[1]],
+        },
+        {
+            name: 'participants',
+            isArray: true,
+            fn: (parent, args) =>
+                parent.participants[0]
+        },
+        {
+            name: 'messages',
+            isArray: true,
+            fn: (parent, args) =>
+                parent.messages[0]
+        },
+        {
+            name: 'author',
+            isArray: false,
+            fn: (parent, args) =>
+                parent.author
+        },
+    );
 })();
 
 // Test Data ------------------------------------------------------------------------------------

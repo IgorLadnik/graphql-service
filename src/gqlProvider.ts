@@ -1,21 +1,9 @@
-import {ChatMessage, User} from "./schema";
-
 const graphql = require('graphql');
-const {
-    GraphQLObjectType,
-    GraphQLString,
-    GraphQLSchema,
-    GraphQLID,
-} = graphql;
+const { GraphQLObjectType, GraphQLSchema, GraphQLID } = graphql;
 import _ from 'lodash';
-//import { OperationDefinitionNode } from 'graphql/language/ast'
 
 export interface ResolveFieldsMap {
     [fieldName: string]: Field;
-}
-
-export interface FieldToTypeMap {
-    [fieldName: string]: any;
 }
 
 export type Field = { name: string, /*type: any,*/ isArray: boolean, fn: ResolveFunction };
@@ -24,10 +12,8 @@ export type ResolveFunction = (parent: any, args: any) => any;
 export class GqlProvider {
     readonly schema: any;
     private resolveFields: ResolveFieldsMap = { };
-    private indent = '';
-    private currentDepth = -1;
-    private arrGqlObject = new Array<any>();
-    private fieldToTypeMap: FieldToTypeMap = { };
+    private indent: string;
+    private currentDepth: number;
     private result: Array<any>;
 
     constructor() {
@@ -41,7 +27,7 @@ export class GqlProvider {
         dummyField.type = new GraphQLObjectType({
             name: '_',
             fields: () => ({
-                id: { type: GraphQLID }
+                id: { type: GraphQLID },
             })
         });
         return dummyField;
@@ -49,12 +35,22 @@ export class GqlProvider {
 
     executeFn = (ob: any): string => {
         console.log('--------------------------------------------------');
-        this.parse('', ob);
-        return JSON.stringify(this.result);
+        this.indent = '';
+        this.currentDepth = -1;
+        this.result = new Array<any>();
+
+        try {
+            this.parse('', ob);
+        }
+        catch (err) {
+            console.log(`Error on executeFn: ${err}`);
+        }
+
+        return this.result ? JSON.stringify(this.result) : '???';
     }
 
     // Recursive
-    private parse = (parentName: string, ob: /*OperationDefinitionNode*/any, parents: Array<any> = new Array<any>()) => {
+    private parse = (parentName: string, ob: any, parents: Array<any> = new Array<any>()) => {
         let selectionSet = ob?.selectionSet;
         if (!selectionSet)
             return Array<any>();
@@ -66,6 +62,10 @@ export class GqlProvider {
         for (let i = 0; i < selections.length; i++) {
             const selection = selections[i];
             const fieldName = selection.name.value;
+
+            if (fieldName === '__schema')
+                return;
+
             const args = GqlProvider.parseInner(selection);
 
             const field = this.resolveFields[fieldName];
@@ -76,7 +76,13 @@ export class GqlProvider {
             const n = this.currentDepth === 0 ? 1 : parents.length;
             for (let j = 0; j < n; j++) {
                 const parent = parents[j];
-                const result = _.isFunction(field?.fn) ? field?.fn(parent, args) : parent[fieldName];
+                let result;
+                try {
+                    result = _.isFunction(field?.fn) ? field?.fn(parent, args) : parent[fieldName];
+                }
+                catch (err) {
+                    console.log(`Error on call of resolve function for field \"${fieldName}\". ${err}`);
+                } 
 
                 if (result) {
                     let lResult: any = result;
@@ -89,14 +95,11 @@ export class GqlProvider {
                             lResult.push(result);
                     }
 
-                    if (this.currentDepth === 0) {
+                    currentParents = lResult;
+                    if (this.currentDepth === 0)
                         this.result = lResult;
-                        currentParents = lResult;
-                    }
-                    else {
+                    else
                         parent[fieldName] = lResult;
-                        currentParents.push(parent[fieldName]);
-                    }
                 }
             }
 
@@ -117,31 +120,6 @@ export class GqlProvider {
         return resolveArgs;
     }
 
-    // // Return either type object.
-    // // In case of list returns item's type object
-    // private getType = (fieldName: string) => {
-    //     let resolveField = this.resolveFields[fieldName];
-    //     if (!resolveField)
-    //         return this.fieldToTypeMap[fieldName];
-    //
-    //     let typeName = resolveField.type.name;
-    //     if (!typeName)
-    //         // In case of list
-    //         typeName = resolveField.type.ofType.name;
-    //
-    //     // Field name coincides with type name (regardless letter case)
-    //     return _.filter(this.arrGqlObject, ob => ob.name.toLowerCase() === typeName.toLowerCase())[0];
-    // }
-
-    setFieldToTypeMapping = (...arrArgs: Array<any>): GqlProvider => {
-        for (let i = 0; i < arrArgs.length; i++) {
-            const item = arrArgs[i];
-            this.fieldToTypeMap[item.field] = item.type;
-        }
-
-        return this;
-    }
-
     setResolveFunctionsForFields = (...arrArgs: Array<Field>): GqlProvider => {
         for (let i = 0; i < arrArgs.length; i++) {
             const field = arrArgs[i];
@@ -150,17 +128,4 @@ export class GqlProvider {
 
         return this;
     }
-
-    setGqlObjects = (...arrArgs: Array<any>): GqlProvider => {
-        for (let i = 0; i < arrArgs.length; i++) {
-            const ob = arrArgs[i];
-            if (ob.isTypeOf === GraphQLObjectType)
-                this.arrGqlObject.push(ob);
-        }
-
-        return this;
-    }
-
-    private getGqlObject = (i: number): any =>
-        this.arrGqlObject.length > i ? this.arrGqlObject[i] : null;
 }
