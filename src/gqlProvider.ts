@@ -168,9 +168,9 @@ export class GqlProvider {
             let fn = this.getResolveFunction(fieldName);
             //--------------------
 
-            const argsSelection = this.parse(fieldName, selection.selectionSet);
-
             console.log(`fieldName = ${this.currentDepth} ${this.indent}\"${fieldName}\"`);
+
+            const argsSelection = this.parse(fieldName, selection.selectionSet);
 
             const resolveField: ResolveField = {
                 parentName,
