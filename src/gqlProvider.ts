@@ -8,7 +8,7 @@ export interface ResolveFieldsMap {
 
 export type Field = { name: string, fn: ResolveFunction };
 export type ResolveFunctionResult = { actual: Array<any>, constructed: Array<any>, description: string, error: string };
-export type ResolveFunction = (parent: any, args: any, data: ResolveFunctionResult) => void;
+export type ResolveFunction = (data: ResolveFunctionResult, args: any) => void;
 
 export class GqlProvider {
     readonly schema: any;
@@ -41,7 +41,7 @@ export class GqlProvider {
         this.data = { actual: new Array<any>(), constructed: new Array<any>(), description: '', error: '' };
 
         try {
-            this.parse('', ob);
+            this.parse(ob);
         }
         catch (err) {
             console.log(`Error on executeFn: ${err}`);
@@ -52,8 +52,8 @@ export class GqlProvider {
     }
 
     // Recursive
-    private parse = (parentName: string, ob: any, parent: any = undefined) => {
-        let selectionSet = ob?.selectionSet;
+    private parse = (upperSelection: any) => {
+        let selectionSet = upperSelection?.selectionSet;
         if (!selectionSet)
             return Array<any>();
 
@@ -76,8 +76,7 @@ export class GqlProvider {
 
             if (_.isFunction(field?.fn)) {
                 try {
-                    //_.isFunction(field?.fn) ? field?.fn(parent, args, this.result) : parent[fieldName];
-                    field.fn(parent, args, this.data);
+                    field.fn(this.data, args);
                 } catch (err) {
                     this.data.error = `Error on call of resolve function for field \"${fieldName}\". ${err}`;
                     console.log(this.data.error);
@@ -86,7 +85,7 @@ export class GqlProvider {
             }
 
             if (this.data.error === '')
-                this.parse(fieldName, selection, field);
+                this.parse(selection);
         }
 
         this.indent = this.indent.substr(1, this.indent.length - 1);

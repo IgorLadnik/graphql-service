@@ -46,7 +46,7 @@ import _ from 'lodash';
     gqlProvider.setResolveFunctionsForFields(
         {
             name: 'user',
-            fn: (parent, args, data) => {
+            fn: (data, args) => {
                 const selectedUser = users[args.id];
                 data.actual.push(selectedUser);
                 data.constructed.push({ name: selectedUser.name, id: selectedUser.id });
@@ -54,7 +54,7 @@ import _ from 'lodash';
         },
         {
             name: 'myChats',
-            fn: (parent, args, data) => {
+            fn: (data, args) => {
                 for (let i = 0; i < 2; i++) {
                     data.actual.push(chats[i]);
                     data.constructed.push({ name: chats[i].name, id: chats[i].id });
@@ -63,21 +63,21 @@ import _ from 'lodash';
         },
         {
             name: 'participants',
-            fn: (parent, args, data) => {
+            fn: (data, args) => {
                 for (let i = 0; i < data.actual.length; i++)
                     data.constructed[i].participants = data.actual[i].participants;
             }
         },
         {
             name: 'messages',
-            fn: (parent, args, data) => {
+            fn: (data, args) => {
                 for (let i = 0; i < data.actual.length; i++)
                     data.constructed[i].messages = data.actual[i].messages;
             }
         },
         {
             name: 'author',
-            fn: (parent, args, data) => {
+            fn: (data, args) => {
                 for (let i = 0; i < data.actual.length; i++)
                     for (let j = 0; j < data.actual.length; j++)
                         data.constructed[i].messages[j].author = data.actual[i].messages[j].author;
