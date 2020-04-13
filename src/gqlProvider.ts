@@ -6,16 +6,22 @@ export interface ResolveFieldsMap {
     [fieldName: string]: Field;
 }
 
+export interface DataMap {
+    [parentdName: string]: Array<any>;
+}
+
 export type Field = { name: string, fn: ResolveFunction };
-export type ResolveFunctionResult = { actual: Array<any>, constructed: Array<any>, description: string, error: string };
-export type ResolveFunction = (data: ResolveFunctionResult, args: any) => void;
+//export type ResolveFunctionResult = { actual: Array<any>, constructed: Array<any>, description: string, error: string };
+export type ResolveFunction = (parent: any, args: any) => any;
 
 export class GqlProvider {
     readonly schema: any;
+
     private resolveFields: ResolveFieldsMap = { };
     private indent: string;
     private currentDepth: number;
-    private data: ResolveFunctionResult;
+    //private data: ResolveFunctionResult;
+    private parent: DataMap;
 
     constructor() {
         const config = new GraphQLObjectType({ name: 'Query' }).toConfig();
@@ -38,7 +44,8 @@ export class GqlProvider {
         console.log('--------------------------------------------------');
         this.indent = '';
         this.currentDepth = -1;
-        this.data = { actual: new Array<any>(), constructed: new Array<any>(), description: '', error: '' };
+        //this.data = { actual: new Array<any>(), constructed: new Array<any>(), description: '', error: '' };
+        this.parent = { };
 
         try {
             this.parse(ob);
@@ -47,7 +54,7 @@ export class GqlProvider {
             console.log(`Error on executeFn: ${err}`);
         }
 
-        console.log(`\n////////////////////////////\n${this.data}\n////////////////////////////\n`);
+        console.log(`\n////////////////////////////\n${this.parent}\n////////////////////////////\n`);
         return this.createOutput();
     }
 
@@ -56,6 +63,11 @@ export class GqlProvider {
         let selectionSet = upperSelection?.selectionSet;
         if (!selectionSet)
             return Array<any>();
+
+        const parentName = upperSelection?.name?.value;
+        let parent = parentName?.length > 0
+            ? { a: this.parent[`@${parentName}`], c: this.parent[parentName] }
+            : { a: new Array<any>(), c: new Array<any>() };
 
         this.indent += '\t';
         this.currentDepth++;
@@ -71,21 +83,17 @@ export class GqlProvider {
             const args = GqlProvider.extractArguments(selection);
             const field = this.resolveFields[fieldName];
 
-            let resultPrefix = `depth: ${this.currentDepth} fieldName:  ${this.indent}\"${fieldName}\" isResolveFunction: ${_.isFunction(field?.fn)}`;
-            console.log(resultPrefix);
-
             if (_.isFunction(field?.fn)) {
                 try {
-                    field.fn(this.data, args);
+                    const result = field.fn(parent, args);
+                    this.updateThisParent(fieldName, result);
                 } catch (err) {
-                    this.data.error = `Error on call of resolve function for field \"${fieldName}\". ${err}`;
-                    console.log(this.data.error);
+                    console.log(`Error on call of resolve function for field \"${fieldName}\". ${err}`);
                     return;
                 }
             }
 
-            if (this.data.error === '')
-                this.parse(selection);
+            this.parse(selection);
         }
 
         this.indent = this.indent.substr(1, this.indent.length - 1);
@@ -102,6 +110,11 @@ export class GqlProvider {
         }
 
         return resolveArgs;
+    }
+
+    updateThisParent = (fieldName: string, result: any) => {
+        this.parent[`@${fieldName}`] = result.a;
+        this.parent[fieldName] = result.c;
     }
 
     setResolveFunctionsForFields = (...arrArgs: Array<Field>): GqlProvider => {
@@ -123,11 +136,27 @@ export class GqlProvider {
     private createOutput = (): string => {
         //JSON.stringify(jsObj, null, "\t"); // stringify with tabs inserted at each level
         //JSON.stringify(jsObj, null, 4);    // stringify with 4 spaces at each level
-        const outStr = this.data.constructed.length > 0
-            ? JSON.stringify(this.data.constructed, null, '\t')
+        const outStr = this.parent.constructed.length > 0
+            ? JSON.stringify(this.parent.constructed, null, '\t')
             : '???';
 
-            console.log(outStr);
-            return outStr;
+        console.log(outStr);
+        return outStr;
+    }
+
+    //TEMP
+    static resolver1 = (fieldName: string, parent: any, args: any): any => {
+        const result = { a: new Array<Array<any>>(), c: new Array<Array<any>>() };
+        for (let i = 0; i < parent.c.length; i++) {
+            const ax = parent.a[i][fieldName];
+            result.a[i] = new Array<any>();
+            result.c[i] = new Array<any>();
+            for (let j = 0; j < ax.length; j++) {
+                const t = ax[j];
+                result.a[i].push(t);
+                result.c[i].push({ name: t.name, id: t.id });
+            }
+        }
+        return result;
     }
 }

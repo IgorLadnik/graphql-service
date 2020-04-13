@@ -2,12 +2,11 @@ import express from 'express';
 import compression from 'compression';
 import cors from 'cors';
 import graphqlHTTP from 'express-graphql';
-import { GqlProvider } from './gqlProvider';
+import {DataMap, GqlProvider} from './gqlProvider';
 import { ExecutionArgs, GraphQLError } from "graphql";
 import _ from 'lodash';
 
-(async function main()
-{
+(async function main() {
     const app = express();
 
     app.use('*', cors());
@@ -46,41 +45,52 @@ import _ from 'lodash';
     gqlProvider.setResolveFunctionsForFields(
         {
             name: 'user',
-            fn: (data, args) => {
+            fn: (parent, args) => {
+                let result = { a: new Array<any>(), c: new Array<any>() };
                 const selectedUser = users[args.id];
-                data.actual.push(selectedUser);
-                data.constructed.push({ name: selectedUser.name, id: selectedUser.id });
+                result.a.push(selectedUser);
+                result.c.push({ name: selectedUser.name, id: selectedUser.id });
+                return result;
             }
         },
         {
             name: 'myChats',
-            fn: (data, args) => {
+            fn: (parent, args) => {
+                let result = { a: new Array<any>(), c: new Array<any>() };
                 for (let i = 0; i < 2; i++) {
-                    data.actual.push(chats[i]);
-                    data.constructed.push({ name: chats[i].name, id: chats[i].id });
+                    result.a.push(chats[i]);
+                    result.c.push({ name: chats[i].name, id: chats[i].id });
                 }
+                return result;
             }
         },
         {
             name: 'participants',
-            fn: (data, args) => {
-                for (let i = 0; i < data.actual.length; i++)
-                    data.constructed[i].participants = data.actual[i].participants;
-            }
+            fn: (parent, args) => GqlProvider.resolver1('participants', parent, args)   //TEMP
         },
         {
             name: 'messages',
-            fn: (data, args) => {
-                for (let i = 0; i < data.actual.length; i++)
-                    data.constructed[i].messages = data.actual[i].messages;
-            }
+            fn: (parent, args) => GqlProvider.resolver1('messages', parent, args)       //TEMP
         },
         {
             name: 'author',
-            fn: (data, args) => {
-                for (let i = 0; i < data.actual.length; i++)
-                    for (let j = 0; j < data.actual.length; j++)
-                        data.constructed[i].messages[j].author = data.actual[i].messages[j].author;
+            fn: (parent, args) => {
+                const fieldName = 'author';
+                const result = { a: new Array<any>(), c: new Array<any>() };
+                // for (let i = 0; i < parent.c.length; i++) {
+                //     const a = parent.a[i];
+                //     const c = parent.c[i];
+
+                    // c.messages = new Array<any>();
+                    // for (let j = 0; j < a.participants.length; j++) {
+                    //     const t = a.participants[j];
+                    //     c.messages.push({ name: t.name, id: t.id });
+                    // }
+                //}
+                // for (let i = 0; i < data.actual.length; i++)
+                //     for (let j = 0; j < data.actual.length; j++)
+                //         data.constructed[i].messages[j].author = data.actual[i].messages[j].author;
+                return result;
             }
         },
     );
