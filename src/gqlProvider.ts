@@ -6,15 +6,16 @@ export interface ResolveFieldsMap {
     [fieldName: string]: Field;
 }
 
-export type Field = { name: string, /*type: any,*/ isArray: boolean, fn: ResolveFunction };
-export type ResolveFunction = (parent: any, args: any) => any;
+export type Field = { name: string, fn: ResolveFunction };
+export type ResolveFunctionResult = { actual: Array<any>, constructed: Array<any>, description: string, error: string };
+export type ResolveFunction = (parent: any, args: any, data: ResolveFunctionResult) => void;
 
 export class GqlProvider {
     readonly schema: any;
     private resolveFields: ResolveFieldsMap = { };
     private indent: string;
     private currentDepth: number;
-    private result: Array<any>;
+    private data: ResolveFunctionResult;
 
     constructor() {
         const config = new GraphQLObjectType({ name: 'Query' }).toConfig();
@@ -37,7 +38,7 @@ export class GqlProvider {
         console.log('--------------------------------------------------');
         this.indent = '';
         this.currentDepth = -1;
-        this.result = new Array<any>();
+        this.data = { actual: new Array<any>(), constructed: new Array<any>(), description: '', error: '' };
 
         try {
             this.parse('', ob);
@@ -46,11 +47,12 @@ export class GqlProvider {
             console.log(`Error on executeFn: ${err}`);
         }
 
-        return this.result ? JSON.stringify(this.result) : '???';
+        console.log(`\n////////////////////////////\n${this.data}\n////////////////////////////\n`);
+        return this.createOutput();
     }
 
     // Recursive
-    private parse = (parentName: string, ob: any, parents: Array<any> = new Array<any>()) => {
+    private parse = (parentName: string, ob: any, parent: any = undefined) => {
         let selectionSet = ob?.selectionSet;
         if (!selectionSet)
             return Array<any>();
@@ -63,56 +65,39 @@ export class GqlProvider {
             const selection = selections[i];
             const fieldName = selection.name.value;
 
-            if (fieldName === '__schema')
+            if (!this.check({fieldName}))
                 return;
 
-            const args = GqlProvider.parseInner(selection);
-
+            const args = GqlProvider.extractArguments(selection);
             const field = this.resolveFields[fieldName];
 
-            console.log(`depth: ${this.currentDepth} fieldName:  ${this.indent}\"${fieldName}\" isResolveFunction: ${_.isFunction(field?.fn)}`);
+            let resultPrefix = `depth: ${this.currentDepth} fieldName:  ${this.indent}\"${fieldName}\" isResolveFunction: ${_.isFunction(field?.fn)}`;
+            console.log(resultPrefix);
 
-            let currentParents = new Array<any>();
-            const n = this.currentDepth === 0 ? 1 : parents.length;
-            for (let j = 0; j < n; j++) {
-                const parent = parents[j];
-                let result;
+            if (_.isFunction(field?.fn)) {
                 try {
-                    result = _.isFunction(field?.fn) ? field?.fn(parent, args) : parent[fieldName];
-                }
-                catch (err) {
-                    console.log(`Error on call of resolve function for field \"${fieldName}\". ${err}`);
-                } 
-
-                if (result) {
-                    let lResult: any = result;
-                    if (field?.isArray) {
-                        lResult = new Array<any>();
-
-                        if (_.isArray(result))
-                            lResult = result;
-                        else
-                            lResult.push(result);
-                    }
-
-                    currentParents = lResult;
-                    if (this.currentDepth === 0)
-                        this.result = lResult;
-                    else
-                        parent[fieldName] = lResult;
+                    //_.isFunction(field?.fn) ? field?.fn(parent, args, this.result) : parent[fieldName];
+                    field.fn(parent, args, this.data);
+                } catch (err) {
+                    this.data.error = `Error on call of resolve function for field \"${fieldName}\". ${err}`;
+                    console.log(this.data.error);
+                    return;
                 }
             }
 
-            this.parse(fieldName, selection, currentParents);
+            if (this.data.error === '')
+                this.parse(fieldName, selection, field);
         }
 
         this.indent = this.indent.substr(1, this.indent.length - 1);
         this.currentDepth--;
     }
 
-    private static parseInner = (selection: any): any => {
-        let resolveArgs: any = { };
+    private static extractArguments = (selection: any): any => {
+        let resolveArgs: any;
         for (let i = 0; i < selection.arguments.length; i++) {
+            if (i === 0)
+                resolveArgs = { };
             const argument = selection.arguments[i];
             resolveArgs[argument.name.value] = parseInt(argument.value.value);
         }
@@ -127,5 +112,23 @@ export class GqlProvider {
         }
 
         return this;
+    }
+
+    private check = (checkData: any): boolean => {
+        if (checkData.fieldName === '__schema')
+            return false;
+
+        return true;
+    }
+
+    private createOutput = (): string => {
+        //JSON.stringify(jsObj, null, "\t"); // stringify with tabs inserted at each level
+        //JSON.stringify(jsObj, null, 4);    // stringify with 4 spaces at each level
+        const outStr = this.data.constructed.length > 0
+            ? JSON.stringify(this.data.constructed, null, '\t')
+            : '???';
+
+            console.log(outStr);
+            return outStr;
     }
 }

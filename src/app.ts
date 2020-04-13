@@ -2,7 +2,7 @@ import express from 'express';
 import compression from 'compression';
 import cors from 'cors';
 import graphqlHTTP from 'express-graphql';
-import { GqlProvider} from './gqlProvider';
+import { GqlProvider, ResolveFunctionResult } from './gqlProvider';
 import { Role } from './schema';
 import { ExecutionArgs, GraphQLError } from "graphql";
 import _ from 'lodash';
@@ -47,33 +47,42 @@ import _ from 'lodash';
     gqlProvider.setResolveFunctionsForFields(
         {
             name: 'user',
-            isArray: false,
-            fn: (parent, args) =>
-                users[args.id]
+            fn: (parent, args, data) => {
+                const selectedUser = users[args.id];
+                data.actual.push(selectedUser);
+                data.constructed.push({ name: selectedUser.name, id: selectedUser.id });
+            }
         },
         {
             name: 'myChats',
-            isArray: true,
-            fn: (parent, args) =>
-                [chats[0], chats[1]],
+            fn: (parent, args, data) => {
+                for (let i = 0; i < 2; i++) {
+                    data.actual.push(chats[i]);
+                    data.constructed.push({ name: chats[i].name, id: chats[i].id });
+                }
+            }
         },
         {
             name: 'participants',
-            isArray: true,
-            fn: (parent, args) =>
-                _.filter(parent.participants, p => p.id === 0)
+            fn: (parent, args, data) => {
+                for (let i = 0; i < data.actual.length; i++)
+                    data.constructed[i].participants = data.actual[i].participants;
+            }
         },
         {
             name: 'messages',
-            isArray: true,
-            fn: (parent, args) =>
-                _.filter(parent.messages, m => m.id === 0)
+            fn: (parent, args, data) => {
+                for (let i = 0; i < data.actual.length; i++)
+                    data.constructed[i].messages = data.actual[i].messages;
+            }
         },
         {
             name: 'author',
-            isArray: false,
-            fn: (parent, args) =>
-                parent.author
+            fn: (parent, args, data) => {
+                for (let i = 0; i < data.actual.length; i++)
+                    for (let j = 0; j < data.actual.length; j++)
+                        data.constructed[i].messages[j].author = data.actual[i].messages[j].author;
+            }
         },
     );
 })();
