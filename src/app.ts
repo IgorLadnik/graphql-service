@@ -2,8 +2,7 @@ import express from 'express';
 import compression from 'compression';
 import cors from 'cors';
 import graphqlHTTP from 'express-graphql';
-import { GqlProvider, ResolveFunctionResult } from './gqlProvider';
-import { Role } from './schema';
+import { GqlProvider } from './gqlProvider';
 import { ExecutionArgs, GraphQLError } from "graphql";
 import _ from 'lodash';
 
@@ -86,6 +85,11 @@ import _ from 'lodash';
         },
     );
 })();
+
+export const Role = {
+    User: 'USER',
+    Admin: 'ADMIN'
+};
 
 // Test Data ------------------------------------------------------------------------------------
 export const users = [
