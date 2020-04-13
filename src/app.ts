@@ -45,7 +45,7 @@ import _ from 'lodash';
     gqlProvider.setResolveFunctionsForFields(
         {
             name: 'user',
-            fn: (parent, args) => {
+            fn: (parent, args, depth, fieldFullPath) => {
                 let result = { a: new Array<any>(), c: new Array<any>() };
                 const selectedUser = users[args.id];
                 result.a.push(selectedUser);
@@ -55,7 +55,7 @@ import _ from 'lodash';
         },
         {
             name: 'myChats',
-            fn: (parent, args) => {
+            fn: (parent, args, depth, fieldFullPath) => {
                 let result = { a: new Array<any>(), c: new Array<any>() };
                 for (let i = 0; i < 2; i++) {
                     result.a.push(chats[i]);
@@ -66,31 +66,20 @@ import _ from 'lodash';
         },
         {
             name: 'participants',
-            fn: (parent, args) => GqlProvider.resolver1('participants', parent, args)   //TEMP
+            fn: (parent, args, depth, fieldFullPath) =>
+                GqlProvider.resolver1('participants', parent, args)   //TEMP
         },
         {
             name: 'messages',
-            fn: (parent, args) => GqlProvider.resolver1('messages', parent, args)       //TEMP
+            fn: (parent, args, depth, fieldFullPath) =>
+                GqlProvider.resolver1('messages', parent, args)       //TEMP
         },
         {
             name: 'author',
-            fn: (parent, args) => {
+            fn: (parent, args, depth, fieldFullPath) => {
                 const fieldName = 'author';
-                const result = { a: new Array<any>(), c: new Array<any>() };
-                // for (let i = 0; i < parent.c.length; i++) {
-                //     const a = parent.a[i];
-                //     const c = parent.c[i];
-
-                    // c.messages = new Array<any>();
-                    // for (let j = 0; j < a.participants.length; j++) {
-                    //     const t = a.participants[j];
-                    //     c.messages.push({ name: t.name, id: t.id });
-                    // }
-                //}
-                // for (let i = 0; i < data.actual.length; i++)
-                //     for (let j = 0; j < data.actual.length; j++)
-                //         data.constructed[i].messages[j].author = data.actual[i].messages[j].author;
-                return result;
+                GqlProvider.recursiveArrayHandling(parent.a, parent.c, fieldName);
+                return parent;
             }
         },
     );

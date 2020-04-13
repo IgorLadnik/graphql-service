@@ -12,7 +12,7 @@ export interface DataMap {
 
 export type Field = { name: string, fn: ResolveFunction };
 //export type ResolveFunctionResult = { actual: Array<any>, constructed: Array<any>, description: string, error: string };
-export type ResolveFunction = (parent: any, args: any) => any;
+export type ResolveFunction = (parent: any, args: any, depth: number, fieldFullPath: string) => any;
 
 export class GqlProvider {
     readonly schema: any;
@@ -48,7 +48,7 @@ export class GqlProvider {
         this.parent = { };
 
         try {
-            this.parse(ob);
+            this.parse(ob, '');
         }
         catch (err) {
             console.log(`Error on executeFn: ${err}`);
@@ -59,7 +59,7 @@ export class GqlProvider {
     }
 
     // Recursive
-    private parse = (upperSelection: any) => {
+    private parse = (upperSelection: any, prevPath: string) => {
         let selectionSet = upperSelection?.selectionSet;
         if (!selectionSet)
             return Array<any>();
@@ -73,6 +73,7 @@ export class GqlProvider {
         this.currentDepth++;
 
         let selections = selectionSet.selections;
+
         for (let i = 0; i < selections.length; i++) {
             const selection = selections[i];
             const fieldName = selection.name.value;
@@ -80,12 +81,13 @@ export class GqlProvider {
             if (!this.check({fieldName}))
                 return;
 
+            const fieldFullPath = `${prevPath}.${fieldName}`;
             const args = GqlProvider.extractArguments(selection);
             const field = this.resolveFields[fieldName];
 
             if (_.isFunction(field?.fn)) {
                 try {
-                    const result = field.fn(parent, args);
+                    const result = field.fn(parent, args, this.currentDepth, fieldFullPath);
                     this.updateThisParent(fieldName, result);
                 } catch (err) {
                     console.log(`Error on call of resolve function for field \"${fieldName}\". ${err}`);
@@ -93,7 +95,7 @@ export class GqlProvider {
                 }
             }
 
-            this.parse(selection);
+            this.parse(selection, fieldFullPath);
         }
 
         this.indent = this.indent.substr(1, this.indent.length - 1);
@@ -143,6 +145,16 @@ export class GqlProvider {
         console.log(outStr);
         return outStr;
     }
+
+    static recursiveArrayHandling = (arr0: Array<any>, arr1: Array<any>, fieldName: string) => {
+        for (let i = 0; i < arr0.length; i++) {
+            if (_.isArray(arr0[i]))
+                GqlProvider.recursiveArrayHandling(arr0[i], arr1[i], fieldName);
+            else
+                arr1[i][fieldName] = arr0[i][fieldName];
+        }
+    }
+
 
     //TEMP
     static resolver1 = (fieldName: string, parent: any, args: any): any => {
