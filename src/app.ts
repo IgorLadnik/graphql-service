@@ -2,7 +2,7 @@ import express from 'express';
 import compression from 'compression';
 import cors from 'cors';
 import graphqlHTTP from 'express-graphql';
-import {DataMap, GqlProvider} from './gqlProvider';
+import { GqlProvider } from './gqlProvider';
 import { ExecutionArgs, GraphQLError } from "graphql";
 import _ from 'lodash';
 
@@ -48,42 +48,21 @@ import _ from 'lodash';
     gqlProvider.setResolveFunctionsForFields(
         {
             name: 'user',
-            fn: (parent, args, depth, fieldFullPath) => {
+            resolveFunc: (data, args, fieldFullPath) => {
                 const selectedUser = users[args.id];
-                parent.a.push(selectedUser);
-                parent.c.push({ name: selectedUser.name, id: selectedUser.id });
+                data.actualObj.push(selectedUser);
+                data.creatingObj.push({ name: selectedUser.name, id: selectedUser.id });
             }
         },
         {
             name: 'myChats',
-            fn: (parent, args, depth, fieldFullPath) => {
+            resolveFunc: (data, args, fieldFullPath) => {
                 for (let i = 0; i < 2; i++) {
-                    parent.a.push(chats[i]);
-                    parent.c.push({ name: chats[i].name, id: chats[i].id });
+                    data.actualObj.push(chats[i]);
+                    data.creatingObj.push({ name: chats[i].name, id: chats[i].id });
                 }
             }
         },
-        // {
-        //     name: 'participants',
-        //     fn: (parent, args, depth, fieldFullPath) =>{
-        //         const fieldName = 'participants';
-        //         GqlProvider.generalResolver(parent.a, parent.c, fieldFullPath);
-        //      }
-        // },
-        // {
-        //     name: 'messages',
-        //     fn: (parent, args, depth, fieldFullPath) => {
-        //         const fieldName = 'messages';
-        //         GqlProvider.generalResolver(parent.a, parent.c, fieldFullPath);
-        //     }
-        // },
-        // {
-        //     name: 'author',
-        //     fn: (parent, args, depth, fieldFullPath) => {
-        //         const fieldName = 'author';
-        //         GqlProvider.generalResolver(parent.a, parent.c, fieldFullPath);
-        //     }
-        // },
     );
 })();
 
