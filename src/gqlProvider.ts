@@ -12,7 +12,7 @@ export interface DataMap {
 
 export type Field = { name: string, fn: ResolveFunction };
 //export type ResolveFunctionResult = { actual: Array<any>, constructed: Array<any>, description: string, error: string };
-export type ResolveFunction = (parent: any, args: any, depth: number, fieldFullPath: string) => any;
+export type ResolveFunction = (parent: any, args: any, depth: number, fieldFullPath: string) => void;
 
 export class GqlProvider {
     readonly schema: any;
@@ -45,7 +45,7 @@ export class GqlProvider {
         this.indent = '';
         this.currentDepth = -1;
         //this.data = { actual: new Array<any>(), constructed: new Array<any>(), description: '', error: '' };
-        this.parent = { };
+        this.parent = { a: new Array<any>(), c: new Array<any>() };
 
         try {
             this.parse(ob, '');
@@ -65,9 +65,6 @@ export class GqlProvider {
             return Array<any>();
 
         const parentName = upperSelection?.name?.value;
-        let parent = parentName?.length > 0
-            ? { a: this.parent[`@${parentName}`], c: this.parent[parentName] }
-            : { a: new Array<any>(), c: new Array<any>() };
 
         this.indent += '\t';
         this.currentDepth++;
@@ -85,14 +82,14 @@ export class GqlProvider {
             const args = GqlProvider.extractArguments(selection);
             const field = this.resolveFields[fieldName];
 
-            if (_.isFunction(field?.fn)) {
-                try {
-                    const result = field.fn(parent, args, this.currentDepth, fieldFullPath);
-                    this.updateThisParent(fieldName, result);
-                } catch (err) {
-                    console.log(`Error on call of resolve function for field \"${fieldName}\". ${err}`);
-                    return;
-                }
+            try {
+                if (_.isFunction(field?.fn))
+                    field.fn(this.parent, args, this.currentDepth, fieldFullPath);
+                else
+                    GqlProvider.recursiveArrayHandling(this.parent.a, this.parent.c, fieldFullPath);
+            } catch (err) {
+                console.log(`Error on call of resolve function for field \"${fieldName}\". ${err}`);
+                return;
             }
 
             this.parse(selection, fieldFullPath);
@@ -100,6 +97,44 @@ export class GqlProvider {
 
         this.indent = this.indent.substr(1, this.indent.length - 1);
         this.currentDepth--;
+    }
+
+    static recursiveArrayHandlingInner = (ob0: any, ob1: any, arrPath: Array<string>, n: number, nmax: number) => {
+        const fieldName = arrPath[n];
+
+        if (fieldName === 'id' || fieldName === 'name')
+            return;
+
+        if (_.isArray(ob0)) {
+            for (let i = 0; i < ob0.length; i++)
+                GqlProvider.recursiveArrayHandlingInner(ob0[i], ob1[i], arrPath, n, nmax);
+        }
+        else {
+            if (ob0[fieldName]) {
+                if (n == nmax) {
+                    // action
+                    if (_.isArray(ob0[fieldName])) {
+                        ob1[fieldName] = new Array<any>();
+                        for (let i = 0; i < ob0[fieldName].length; i++) {
+                            ob1[fieldName].push({ name: ob0[fieldName][i].name, id: ob0[fieldName][i].id });
+                        }
+                    }
+                    else {
+                        if (ob0[fieldName].name && ob0[fieldName].id)
+                            // complex
+                            ob1[fieldName] = { name: ob0[fieldName].name, id: ob0[fieldName].id };
+                        else
+                            // simple
+                            ob1[fieldName] = ob0[fieldName]
+                    }
+                    return;
+                }
+                else
+                    GqlProvider.recursiveArrayHandlingInner(ob0[fieldName], ob1[fieldName], arrPath, n + 1, nmax);
+            }
+            else
+                GqlProvider.recursiveArrayHandlingInner(ob0, ob1, arrPath, n, nmax);
+        }
     }
 
     private static extractArguments = (selection: any): any => {
@@ -112,11 +147,6 @@ export class GqlProvider {
         }
 
         return resolveArgs;
-    }
-
-    updateThisParent = (fieldName: string, result: any) => {
-        this.parent[`@${fieldName}`] = result.a;
-        this.parent[fieldName] = result.c;
     }
 
     setResolveFunctionsForFields = (...arrArgs: Array<Field>): GqlProvider => {
@@ -146,29 +176,11 @@ export class GqlProvider {
         return outStr;
     }
 
-    static recursiveArrayHandling = (arr0: Array<any>, arr1: Array<any>, fieldName: string) => {
-        for (let i = 0; i < arr0.length; i++) {
-            if (_.isArray(arr0[i]))
-                GqlProvider.recursiveArrayHandling(arr0[i], arr1[i], fieldName);
-            else
-                arr1[i][fieldName] = arr0[i][fieldName];
-        }
+    static recursiveArrayHandling = (ob0: any, ob1: any, fieldFullPath: string) => {
+        const arrPath = GqlProvider.splitFullFieldPath(fieldFullPath);
+        GqlProvider.recursiveArrayHandlingInner(ob0, ob1, arrPath, 1, arrPath.length - 1);
     }
 
-
-    //TEMP
-    static resolver1 = (fieldName: string, parent: any, args: any): any => {
-        const result = { a: new Array<Array<any>>(), c: new Array<Array<any>>() };
-        for (let i = 0; i < parent.c.length; i++) {
-            const ax = parent.a[i][fieldName];
-            result.a[i] = new Array<any>();
-            result.c[i] = new Array<any>();
-            for (let j = 0; j < ax.length; j++) {
-                const t = ax[j];
-                result.a[i].push(t);
-                result.c[i].push({ name: t.name, id: t.id });
-            }
-        }
-        return result;
-    }
+    static splitFullFieldPath = (fieldFullPath: string): Array<string> =>
+        fieldFullPath.substr(1, fieldFullPath.length - 1).split('.');
 }

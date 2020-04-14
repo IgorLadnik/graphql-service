@@ -7,6 +7,9 @@ import { ExecutionArgs, GraphQLError } from "graphql";
 import _ from 'lodash';
 
 (async function main() {
+
+    //const arrStr = GqlProvider.splitFullFieldPath('.');
+
     const app = express();
 
     app.use('*', cors());
@@ -46,42 +49,41 @@ import _ from 'lodash';
         {
             name: 'user',
             fn: (parent, args, depth, fieldFullPath) => {
-                let result = { a: new Array<any>(), c: new Array<any>() };
                 const selectedUser = users[args.id];
-                result.a.push(selectedUser);
-                result.c.push({ name: selectedUser.name, id: selectedUser.id });
-                return result;
+                parent.a.push(selectedUser);
+                parent.c.push({ name: selectedUser.name, id: selectedUser.id });
             }
         },
         {
             name: 'myChats',
             fn: (parent, args, depth, fieldFullPath) => {
-                let result = { a: new Array<any>(), c: new Array<any>() };
                 for (let i = 0; i < 2; i++) {
-                    result.a.push(chats[i]);
-                    result.c.push({ name: chats[i].name, id: chats[i].id });
+                    parent.a.push(chats[i]);
+                    parent.c.push({ name: chats[i].name, id: chats[i].id });
                 }
-                return result;
             }
         },
-        {
-            name: 'participants',
-            fn: (parent, args, depth, fieldFullPath) =>
-                GqlProvider.resolver1('participants', parent, args)   //TEMP
-        },
-        {
-            name: 'messages',
-            fn: (parent, args, depth, fieldFullPath) =>
-                GqlProvider.resolver1('messages', parent, args)       //TEMP
-        },
-        {
-            name: 'author',
-            fn: (parent, args, depth, fieldFullPath) => {
-                const fieldName = 'author';
-                GqlProvider.recursiveArrayHandling(parent.a, parent.c, fieldName);
-                return parent;
-            }
-        },
+        // {
+        //     name: 'participants',
+        //     fn: (parent, args, depth, fieldFullPath) =>{
+        //         const fieldName = 'participants';
+        //         GqlProvider.recursiveArrayHandling(parent.a, parent.c, fieldFullPath);
+        //      }
+        // },
+        // {
+        //     name: 'messages',
+        //     fn: (parent, args, depth, fieldFullPath) => {
+        //         const fieldName = 'messages';
+        //         GqlProvider.recursiveArrayHandling(parent.a, parent.c, fieldFullPath);
+        //     }
+        // },
+        // {
+        //     name: 'author',
+        //     fn: (parent, args, depth, fieldFullPath) => {
+        //         const fieldName = 'author';
+        //         GqlProvider.recursiveArrayHandling(parent.a, parent.c, fieldFullPath);
+        //     }
+        // },
     );
 })();
 
