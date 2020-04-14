@@ -4,18 +4,16 @@ import cors from 'cors';
 import graphqlHTTP from 'express-graphql';
 import { GqlProvider } from './gqlProvider';
 import { ExecutionArgs, GraphQLError } from "graphql";
-import _ from 'lodash';
+import { Logger } from "./logger";
 
 (async function main() {
-
-    //const arrStr = GqlProvider.splitFullFieldPath('.');
-
     const app = express();
 
     app.use('*', cors());
     app.use(compression());
 
-    const gqlProvider = new GqlProvider();
+    const logger = new Logger();
+    const gqlProvider = new GqlProvider(logger);
 
     app.use('/graphql', graphqlHTTP({
         schema: gqlProvider.schema,
@@ -25,10 +23,10 @@ import _ from 'lodash';
             gqlProvider.executeFn(args.document.definitions[0]),
 
         customValidateFn: (schema, documentAST, validationRules): any =>
-            true,
+            gqlProvider.validateFn(schema, documentAST, validationRules),
 
         customFormatErrorFn: (error: GraphQLError) =>
-            console.log('customFormatErrorFn')
+            gqlProvider.formatErrorFn(error),
     }));
 
     let port = 3000;
@@ -36,10 +34,10 @@ import _ from 'lodash';
 
     try {
         await app.listen(port);
-        console.log(`\n--- GraphQL is running on ${address}`);
+        logger.log(`\n--- GraphQL is running on ${address}`);
     }
     catch (err) {
-        console.log(`\n*** Error to listen on ${address}. ${err}`)
+        logger.log(`\n*** Error to listen on ${address}. ${err}`)
     }
 
     // Settings for gqlProvider.
@@ -47,7 +45,7 @@ import _ from 'lodash';
     // For now these are dummy functions, args are not yest provided
     gqlProvider.setResolveFunctionsForFields(
         {
-            name: 'user',
+            fieldName: 'user',
             resolveFunc: (data, args, fieldFullPath) => {
                 const selectedUser = users[args.id];
                 data.actualObj.push(selectedUser);
@@ -55,7 +53,7 @@ import _ from 'lodash';
             }
         },
         {
-            name: 'myChats',
+            fieldName: 'myChats',
             resolveFunc: (data, args, fieldFullPath) => {
                 for (let i = 0; i < 2; i++) {
                     data.actualObj.push(chats[i]);

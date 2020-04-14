@@ -1,16 +1,15 @@
 const graphql = require('graphql');
 const { GraphQLObjectType, GraphQLSchema, GraphQLID } = graphql;
+import { DocumentNode, GraphQLError } from "graphql";
 import _ from 'lodash';
+import { ILogger } from "./logger";
+import { ValidationRule } from "graphql/validation/ValidationContext";
 
 export interface ResolveFieldsMap {
     [fieldName: string]: Field;
 }
 
-// export interface DataMap {
-//     [parentdName: string]: Array<Data>;
-// }
-
-export type Field = { name: string, resolveFunc: ResolveFunction };
+export type Field = { fieldName: string, resolveFunc: ResolveFunction };
 export type ResolveFunction = (data: Data, args: any, fieldFullPath: string) => void;
 export type Data = { actualObj: any, creatingObj: any };
 
@@ -18,11 +17,9 @@ export class GqlProvider {
     readonly schema: any;
 
     private resolveFields: ResolveFieldsMap = { };
-    private indent: string;
-    private currentDepth: number;
     private data: Data;
 
-    constructor() {
+    constructor(private logger: ILogger) {
         const config = new GraphQLObjectType({ name: 'Query' }).toConfig();
         config.fields['_'] = GqlProvider.createFreshDummyField();
         this.schema = new GraphQLSchema({ query: new GraphQLObjectType(config) });
@@ -39,32 +36,31 @@ export class GqlProvider {
         return dummyField;
     }
 
-    executeFn = (ob: any): string => {
-        console.log('--------------------------------------------------');
-        this.indent = '';
-        this.currentDepth = -1;
+    validateFn = (schema: any, documentAST: DocumentNode, rules: ReadonlyArray<ValidationRule>) => true;
+
+    formatErrorFn = (error: GraphQLError) => this.logger.log(`*** Error: ${error}`);
+
+    executeFn = (obj: any): string => {
+        this.logger.log('--------------------------------------------------');
         this.data = { actualObj: new Array<any>(), creatingObj: new Array<any>() };
 
         try {
-            this.parse(ob, '');
+            this.parse(obj);
         }
         catch (err) {
-            console.log(`Error on executeFn: ${err}`);
+            this.logger.log(`*** Error on executeFn: ${err}`);
         }
 
-        console.log(GqlProvider.jsonStringifyFormatted(this.data.creatingObj));
-        console.log('--------------------------------------------------');
+        this.logger.log(GqlProvider.jsonStringifyFormatted(this.data.creatingObj));
+        this.logger.log('--------------------------------------------------');
         return this.createOutput();
     }
 
     // Recursive
-    private parse = (upperSelection: any, prevPath: string) => {
+    private parse = (upperSelection: any, prevPath: string = '') => {
         let selectionSet = upperSelection?.selectionSet;
         if (!selectionSet)
             return Array<any>();
-
-        this.indent += '\t';
-        this.currentDepth++;
 
         let selections = selectionSet.selections;
 
@@ -72,7 +68,7 @@ export class GqlProvider {
             const selection = selections[i];
             const fieldName = selection.name.value;
 
-            if (!this.check({fieldName}))
+            if (!GqlProvider.check({fieldName}))
                 return;
 
             const fieldFullPath = `${prevPath}.${fieldName}`;
@@ -85,27 +81,21 @@ export class GqlProvider {
                 else
                     GqlProvider.generalResolveFunc(this.data, fieldFullPath);
             } catch (err) {
-                console.log(`Error on call of resolve function for field \"${fieldName}\". ${err}`);
+                this.logger.log(`*** Error on call of resolve function for field \"${fieldName}\". ${err}`);
                 return;
             }
 
             this.parse(selection, fieldFullPath);
         }
-
-        this.indent = this.indent.substr(1, this.indent.length - 1);
-        this.currentDepth--;
     }
 
-    static generalResolveFunc = (data: any, fieldFullPath: string) => {
+    static generalResolveFunc = (data: Data, fieldFullPath: string) => {
         const arrPath = GqlProvider.splitFullFieldPath(fieldFullPath);
         GqlProvider.recursiveResolveFuncInner(data.actualObj, data.creatingObj, arrPath, 1, arrPath.length - 1);
     }
 
     private static recursiveResolveFuncInner = (actualObj: any, creatingObj: any, arrPath: Array<string>, n: number, nmax: number) => {
         const fieldName = arrPath[n];
-
-        if (fieldName === 'id') //??
-            return;
 
         if (_.isArray(actualObj))
             for (let i = 0; i < actualObj.length; i++)
@@ -121,17 +111,16 @@ export class GqlProvider {
                     GqlProvider.recursiveResolveFuncInner(actualObj[fieldName], creatingObj[fieldName], arrPath, n + 1, nmax);
     }
 
-
     private static fillCreatingObj = (actualObj: any, creatingObj: any, fieldName: string) => {
         if (_.isArray(actualObj[fieldName])) {
             creatingObj[fieldName] = new Array<any>();
             for (let i = 0; i < actualObj[fieldName].length; i++)
-                creatingObj[fieldName].push({ id: actualObj[fieldName][i].id });
+                creatingObj[fieldName].push({  });
         }
         else
             creatingObj[fieldName] = _.isNil(actualObj[fieldName].name) || _.isNil(actualObj[fieldName].id)
                 ? /* simple */  actualObj[fieldName]
-                : /* complex */ { id: actualObj[fieldName].id };
+                : /* complex */ {  };
     }
 
     private static extractArguments = (selection: any): any => {
@@ -149,13 +138,13 @@ export class GqlProvider {
     setResolveFunctionsForFields = (...arrArgs: Array<Field>): GqlProvider => {
         for (let i = 0; i < arrArgs.length; i++) {
             const field = arrArgs[i];
-            this.resolveFields[field.name] = field;
+            this.resolveFields[field.fieldName] = field;
         }
 
         return this;
     }
 
-    private check = (checkData: any): boolean => {
+    private static check = (checkData: any): boolean => {
         if (checkData.fieldName === '__schema')
             return false;
 
@@ -172,6 +161,6 @@ export class GqlProvider {
             ? GqlProvider.jsonStringifyFormatted(this.data.creatingObj)
             : '???';
 
-    static splitFullFieldPath = (fieldFullPath: string): Array<string> =>
+    private static splitFullFieldPath = (fieldFullPath: string): Array<string> =>
         fieldFullPath.substr(1, fieldFullPath.length - 1).split('.');
 }
