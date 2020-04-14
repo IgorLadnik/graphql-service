@@ -122,12 +122,12 @@ export class GqlProvider {
                         }
                     }
                     else {
-                        if (ob0[fieldName].name && ob0[fieldName].id)
-                            // complex
-                            ob1[fieldName] = { name: ob0[fieldName].name, id: ob0[fieldName].id };
-                        else
+                        if (_.isNil(ob0[fieldName].name) || _.isNil(ob0[fieldName].id))
                             // simple
                             ob1[fieldName] = ob0[fieldName]
+                        else
+                            // complex
+                            ob1[fieldName] = { name: ob0[fieldName].name, id: ob0[fieldName].id };
                     }
                     return;
                 }
