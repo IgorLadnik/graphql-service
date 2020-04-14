@@ -156,9 +156,9 @@ export class GqlProvider {
         //JSON.stringify(jsObj, null, 4);    // stringify with 4 spaces at each level
         JSON.stringify(obj, null, '\t')
 
-    private createOutput = (): string =>
+    private createOutput = (): any =>
         this.data.creatingObj.length > 0
-            ? GqlProvider.jsonStringifyFormatted(this.data.creatingObj)
+            ? this.data.creatingObj
             : '???';
 
     private static splitFullFieldPath = (fieldFullPath: string): Array<string> =>
