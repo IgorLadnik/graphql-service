@@ -67,21 +67,21 @@ import _ from 'lodash';
         //     name: 'participants',
         //     fn: (parent, args, depth, fieldFullPath) =>{
         //         const fieldName = 'participants';
-        //         GqlProvider.recursiveArrayHandling(parent.a, parent.c, fieldFullPath);
+        //         GqlProvider.generalResolver(parent.a, parent.c, fieldFullPath);
         //      }
         // },
         // {
         //     name: 'messages',
         //     fn: (parent, args, depth, fieldFullPath) => {
         //         const fieldName = 'messages';
-        //         GqlProvider.recursiveArrayHandling(parent.a, parent.c, fieldFullPath);
+        //         GqlProvider.generalResolver(parent.a, parent.c, fieldFullPath);
         //     }
         // },
         // {
         //     name: 'author',
         //     fn: (parent, args, depth, fieldFullPath) => {
         //         const fieldName = 'author';
-        //         GqlProvider.recursiveArrayHandling(parent.a, parent.c, fieldFullPath);
+        //         GqlProvider.generalResolver(parent.a, parent.c, fieldFullPath);
         //     }
         // },
     );

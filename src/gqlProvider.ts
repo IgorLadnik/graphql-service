@@ -11,7 +11,6 @@ export interface DataMap {
 }
 
 export type Field = { name: string, fn: ResolveFunction };
-//export type ResolveFunctionResult = { actual: Array<any>, constructed: Array<any>, description: string, error: string };
 export type ResolveFunction = (parent: any, args: any, depth: number, fieldFullPath: string) => void;
 
 export class GqlProvider {
@@ -20,7 +19,6 @@ export class GqlProvider {
     private resolveFields: ResolveFieldsMap = { };
     private indent: string;
     private currentDepth: number;
-    //private data: ResolveFunctionResult;
     private parent: DataMap;
 
     constructor() {
@@ -44,7 +42,6 @@ export class GqlProvider {
         console.log('--------------------------------------------------');
         this.indent = '';
         this.currentDepth = -1;
-        //this.data = { actual: new Array<any>(), constructed: new Array<any>(), description: '', error: '' };
         this.parent = { a: new Array<any>(), c: new Array<any>() };
 
         try {
@@ -86,7 +83,7 @@ export class GqlProvider {
                 if (_.isFunction(field?.fn))
                     field.fn(this.parent, args, this.currentDepth, fieldFullPath);
                 else
-                    GqlProvider.recursiveArrayHandling(this.parent.a, this.parent.c, fieldFullPath);
+                    GqlProvider.generalResolver(this.parent.a, this.parent.c, fieldFullPath);
             } catch (err) {
                 console.log(`Error on call of resolve function for field \"${fieldName}\". ${err}`);
                 return;
@@ -99,7 +96,12 @@ export class GqlProvider {
         this.currentDepth--;
     }
 
-    static recursiveArrayHandlingInner = (ob0: any, ob1: any, arrPath: Array<string>, n: number, nmax: number) => {
+    static generalResolver = (ob0: any, ob1: any, fieldFullPath: string) => {
+        const arrPath = GqlProvider.splitFullFieldPath(fieldFullPath);
+        GqlProvider.recursiveGeneralResolverInner(ob0, ob1, arrPath, 1, arrPath.length - 1);
+    }
+
+    private static recursiveGeneralResolverInner = (ob0: any, ob1: any, arrPath: Array<string>, n: number, nmax: number) => {
         const fieldName = arrPath[n];
 
         if (fieldName === 'id' || fieldName === 'name')
@@ -107,7 +109,7 @@ export class GqlProvider {
 
         if (_.isArray(ob0)) {
             for (let i = 0; i < ob0.length; i++)
-                GqlProvider.recursiveArrayHandlingInner(ob0[i], ob1[i], arrPath, n, nmax);
+                GqlProvider.recursiveGeneralResolverInner(ob0[i], ob1[i], arrPath, n, nmax);
         }
         else {
             if (ob0[fieldName]) {
@@ -130,10 +132,10 @@ export class GqlProvider {
                     return;
                 }
                 else
-                    GqlProvider.recursiveArrayHandlingInner(ob0[fieldName], ob1[fieldName], arrPath, n + 1, nmax);
+                    GqlProvider.recursiveGeneralResolverInner(ob0[fieldName], ob1[fieldName], arrPath, n + 1, nmax);
             }
             else
-                GqlProvider.recursiveArrayHandlingInner(ob0, ob1, arrPath, n, nmax);
+                GqlProvider.recursiveGeneralResolverInner(ob0, ob1, arrPath, n, nmax);
         }
     }
 
@@ -174,11 +176,6 @@ export class GqlProvider {
 
         console.log(outStr);
         return outStr;
-    }
-
-    static recursiveArrayHandling = (ob0: any, ob1: any, fieldFullPath: string) => {
-        const arrPath = GqlProvider.splitFullFieldPath(fieldFullPath);
-        GqlProvider.recursiveArrayHandlingInner(ob0, ob1, arrPath, 1, arrPath.length - 1);
     }
 
     static splitFullFieldPath = (fieldFullPath: string): Array<string> =>
