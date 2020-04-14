@@ -52,7 +52,8 @@ export class GqlProvider {
             console.log(`Error on executeFn: ${err}`);
         }
 
-        console.log(`\n////////////////////////////\n${this.data}\n////////////////////////////\n`);
+        console.log(GqlProvider.jsonStringifyFormatted(this.data.creatingObj));
+        console.log('--------------------------------------------------');
         return this.createOutput();
     }
 
@@ -110,22 +111,22 @@ export class GqlProvider {
             for (let i = 0; i < actualObj.length; i++)
                 GqlProvider.recursiveResolveFuncInner(actualObj[i], creatingObj[i], arrPath, n, nmax);
         else
-            if (actualObj[fieldName]) {
+            if (_.isNil(actualObj[fieldName]))
+                GqlProvider.recursiveResolveFuncInner(actualObj, creatingObj, arrPath, n, nmax);
+            else
                 if (n == nmax)
                     // action
                     GqlProvider.fillCreatingObj(actualObj, creatingObj, fieldName);
                 else
                     GqlProvider.recursiveResolveFuncInner(actualObj[fieldName], creatingObj[fieldName], arrPath, n + 1, nmax);
-            }
-            else
-                GqlProvider.recursiveResolveFuncInner(actualObj, creatingObj, arrPath, n, nmax);
     }
+
 
     private static fillCreatingObj = (actualObj: any, creatingObj: any, fieldName: string) => {
         if (_.isArray(actualObj[fieldName])) {
             creatingObj[fieldName] = new Array<any>();
             for (let i = 0; i < actualObj[fieldName].length; i++)
-                creatingObj[fieldName].push({ name: actualObj[fieldName][i].name, id: actualObj[fieldName][i].id });
+                creatingObj[fieldName].push({ id: actualObj[fieldName][i].id });
         }
         else
             creatingObj[fieldName] = _.isNil(actualObj[fieldName].name) || _.isNil(actualObj[fieldName].id)
@@ -161,16 +162,15 @@ export class GqlProvider {
         return true;
     }
 
-    private createOutput = (): string => {
+    private static jsonStringifyFormatted = (obj: any): string =>
         //JSON.stringify(jsObj, null, "\t"); // stringify with tabs inserted at each level
         //JSON.stringify(jsObj, null, 4);    // stringify with 4 spaces at each level
-        const outStr = this.data.creatingObj.length > 0
-            ? JSON.stringify(this.data.creatingObj, null, '\t')
-            : '???';
+        JSON.stringify(obj, null, '\t')
 
-        console.log(outStr);
-        return outStr;
-    }
+    private createOutput = (): string =>
+        this.data.creatingObj.length > 0
+            ? GqlProvider.jsonStringifyFormatted(this.data.creatingObj)
+            : '???';
 
     static splitFullFieldPath = (fieldFullPath: string): Array<string> =>
         fieldFullPath.substr(1, fieldFullPath.length - 1).split('.');
