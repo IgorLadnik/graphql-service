@@ -103,7 +103,7 @@ export class GqlProvider {
     private static recursiveResolveFuncInner = (actualObj: any, creatingObj: any, arrPath: Array<string>, n: number, nmax: number) => {
         const fieldName = arrPath[n];
 
-        if (fieldName === 'id' || fieldName === 'name') //??
+        if (fieldName === 'id') //??
             return;
 
         if (_.isArray(actualObj))
@@ -130,7 +130,7 @@ export class GqlProvider {
         else
             creatingObj[fieldName] = _.isNil(actualObj[fieldName].name) || _.isNil(actualObj[fieldName].id)
                 ? /* simple */  actualObj[fieldName]
-                : /* complex */ { name: actualObj[fieldName].name, id: actualObj[fieldName].id };
+                : /* complex */ { id: actualObj[fieldName].id };
     }
 
     private static extractArguments = (selection: any): any => {
