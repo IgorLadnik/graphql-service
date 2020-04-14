@@ -111,11 +111,9 @@ export class GqlProvider {
                 GqlProvider.recursiveResolveFuncInner(actualObj[i], creatingObj[i], arrPath, n, nmax);
         else
             if (actualObj[fieldName]) {
-                if (n == nmax) {
+                if (n == nmax)
                     // action
                     GqlProvider.fillCreatingObj(actualObj, creatingObj, fieldName);
-                    return;
-                }
                 else
                     GqlProvider.recursiveResolveFuncInner(actualObj[fieldName], creatingObj[fieldName], arrPath, n + 1, nmax);
             }
