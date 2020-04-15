@@ -46,7 +46,7 @@ export class GqlProvider {
     executeFn = (obj: any): string => {
         this.logger.log('--------------------------------------------------');
         this.data = { typeObj: new Array<any>(), resultObj: new Array<any>() };
-        
+
         try {
             this.parse(obj);
         }
@@ -110,12 +110,12 @@ export class GqlProvider {
             else
                 if (depth == maxDepth)
                     // action
-                    GqlProvider.fillresultObj(typeObj, resultObj, fieldName);
+                    GqlProvider.fillResultObj(typeObj, resultObj, fieldName);
                 else
                     this.recursiveResolveFuncInner(typeObj[fieldName], resultObj[fieldName], depth + 1);
     }
 
-    private static fillresultObj = (typeObj: any, resultObj: any, fieldName: string) => {
+    private static fillResultObj = (typeObj: any, resultObj: any, fieldName: string) => {
         if (_.isArray(typeObj[fieldName])) {
             resultObj[fieldName] = new Array<any>();
             for (let i = 0; i < typeObj[fieldName].length; i++)
