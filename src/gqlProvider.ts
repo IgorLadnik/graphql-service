@@ -99,7 +99,7 @@ export class GqlProvider {
     }
 
     private recursiveResolveFuncInner = (actualObj: any, creatingObj: any, depth: number) => {
-        const nDepth = this.arrPath.length - 1;
+        const maxDepth = this.arrPath.length - 1;
         const fieldName = this.arrPath[depth];
 
         if (_.isArray(actualObj))
@@ -109,7 +109,7 @@ export class GqlProvider {
             if (_.isNil(actualObj[fieldName]))
                 this.recursiveResolveFuncInner(actualObj, creatingObj, depth);
             else
-                if (depth == nDepth)
+                if (depth == maxDepth)
                     // action
                     GqlProvider.fillCreatingObj(actualObj, creatingObj, fieldName);
                 else
