@@ -25,7 +25,7 @@ export class GqlProvider {
     private arrPath: Array<string>;
     private args: any;
     private field: Field;
-    private fieldFullPath: string;
+    //private fieldFullPath: string;
 
     constructor(private logger: ILogger,
                 private postProcessFn = (obj: any) => obj) {
@@ -52,7 +52,7 @@ export class GqlProvider {
     executeFn = (obj: any): string => {
         this.logger.log('--------------------------------------------------');
         this.data = { typeObj: new Array<any>(), resultObj: new Array<any>() };
-        this.fieldFullPath = '';
+        //this.fieldFullPath = '';
 
         try {
             this.parse(obj);
@@ -90,26 +90,26 @@ export class GqlProvider {
             if (!GqlProvider.check({fieldName}))
                 return;
 
-            this.fieldFullPath = GqlProvider.getFullFieldPath(prevPath, fieldName);
+            const fieldFullPath = GqlProvider.getFullFieldPath(prevPath, fieldName);
             this.args = GqlProvider.extractArguments(selection);
-            this.field = this.resolveFields[this.fieldFullPath];
+            this.field = this.resolveFields[fieldFullPath];
 
             try {
                 if (_.isFunction(this.field?.resolveFunc) && prevPath.length == 0)
                     this.field.resolveFunc(this.data, this.args);
                 else
-                    this.generalResolveFunc(this.data, this.fieldFullPath);
+                    this.generalResolveFunc(this.data, fieldFullPath);
             } catch (err) {
                 this.logger.log(`*** Error on call of resolve function for field \"${fieldName}\". ${err}`);
                 return;
             }
 
-            this.parse(selection, this.fieldFullPath);
+            this.parse(selection, fieldFullPath);
         }
     }
 
     generalResolveFunc = (data: Data, fieldFullPath: string) => {
-        this.arrPath = this.fieldFullPath.split(GqlProvider.pathDelim);
+        this.arrPath = fieldFullPath.split(GqlProvider.pathDelim);
         this.recursiveResolveFuncInner(data.typeObj, data.resultObj, 1);
     }
 
