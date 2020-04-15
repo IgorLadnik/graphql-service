@@ -19,6 +19,9 @@ export class GqlProvider {
     private resolveFields: ResolveFieldsMap = { };
     private data: Data;
 
+    // for recursion
+    private arrPath: Array<string>;
+
     constructor(private logger: ILogger) {
         const config = new GraphQLObjectType({ name: 'Query' }).toConfig();
         config.fields['_'] = GqlProvider.createFreshDummyField();
@@ -43,6 +46,7 @@ export class GqlProvider {
     executeFn = (obj: any): string => {
         this.logger.log('--------------------------------------------------');
         this.data = { actualObj: new Array<any>(), creatingObj: new Array<any>() };
+        //this.arrPath = new Array<string>();
 
         try {
             this.parse(obj);
@@ -79,7 +83,7 @@ export class GqlProvider {
                 if (_.isFunction(field?.resolveFunc))
                     field.resolveFunc(this.data, args, fieldFullPath);
                 else
-                    GqlProvider.generalResolveFunc(this.data, fieldFullPath);
+                    this.generalResolveFunc(this.data, fieldFullPath);
             } catch (err) {
                 this.logger.log(`*** Error on call of resolve function for field \"${fieldName}\". ${err}`);
                 return;
@@ -89,26 +93,27 @@ export class GqlProvider {
         }
     }
 
-    static generalResolveFunc = (data: Data, fieldFullPath: string) => {
-        const arrPath = GqlProvider.splitFullFieldPath(fieldFullPath);
-        GqlProvider.recursiveResolveFuncInner(data.actualObj, data.creatingObj, arrPath, 1, arrPath.length - 1);
+    generalResolveFunc = (data: Data, fieldFullPath: string) => {
+        this.arrPath = GqlProvider.splitFullFieldPath(fieldFullPath);
+        this.recursiveResolveFuncInner(data.actualObj, data.creatingObj, 1);
     }
 
-    private static recursiveResolveFuncInner = (actualObj: any, creatingObj: any, arrPath: Array<string>, n: number, nmax: number) => {
-        const fieldName = arrPath[n];
+    private recursiveResolveFuncInner = (actualObj: any, creatingObj: any, depth: number) => {
+        const nDepth = this.arrPath.length - 1;
+        const fieldName = this.arrPath[depth];
 
         if (_.isArray(actualObj))
             for (let i = 0; i < actualObj.length; i++)
-                GqlProvider.recursiveResolveFuncInner(actualObj[i], creatingObj[i], arrPath, n, nmax);
+                this.recursiveResolveFuncInner(actualObj[i], creatingObj[i], depth);
         else
             if (_.isNil(actualObj[fieldName]))
-                GqlProvider.recursiveResolveFuncInner(actualObj, creatingObj, arrPath, n, nmax);
+                this.recursiveResolveFuncInner(actualObj, creatingObj, depth);
             else
-                if (n == nmax)
+                if (depth == nDepth)
                     // action
                     GqlProvider.fillCreatingObj(actualObj, creatingObj, fieldName);
                 else
-                    GqlProvider.recursiveResolveFuncInner(actualObj[fieldName], creatingObj[fieldName], arrPath, n + 1, nmax);
+                    this.recursiveResolveFuncInner(actualObj[fieldName], creatingObj[fieldName], depth + 1);
     }
 
     private static fillCreatingObj = (actualObj: any, creatingObj: any, fieldName: string) => {
