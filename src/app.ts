@@ -45,21 +45,27 @@ import { Logger } from "./logger";
     // For now these are dummy functions, args are not yest provided
     gqlProvider.setResolveFunctionsForFields(
         {
-            fieldName: 'user',
-            resolveFunc: (data, args, fieldFullPath) => {
+            fullFieldPath: 'user',
+            resolveFunc: (data, args) => {
                 const selectedUser = users[args.id];
                 data.typeObj.push(selectedUser);
                 data.resultObj.push({ type: selectedUser.type, id: selectedUser.id });
             }
         },
         {
-            fieldName: 'myChats',
-            resolveFunc: (data, args, fieldFullPath) => {
+            fullFieldPath: 'myChats',
+            resolveFunc: (data, args) => {
                 for (let i = 0; i < 2; i++) {
                     data.typeObj.push(chats[i]);
                     data.resultObj.push({ type: chats[i].type, id: chats[i].id });
                 }
             }
+        },
+        {
+            //TEST, may be omitted
+            fullFieldPath: 'myChats.messages.content',
+            resolveFunc: (data, args) =>
+                data.resultObj.content = data.typeObj.content
         },
     );
 })();

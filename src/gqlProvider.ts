@@ -9,11 +9,13 @@ export interface ResolveFieldsMap {
     [fieldName: string]: Field;
 }
 
-export type Field = { fieldName: string, resolveFunc: ResolveFunction };
-export type ResolveFunction = (data: Data, args: any, fieldFullPath: string) => void;
+export type Field = { fullFieldPath: string, resolveFunc: ResolveFunction };
+export type ResolveFunction = (data: Data, args: any) => void;
 export type Data = { typeObj: any, resultObj: any };
 
 export class GqlProvider {
+    private static readonly pathDelim = '.';
+
     readonly schema: any;
 
     private resolveFields: ResolveFieldsMap = { };
@@ -21,6 +23,9 @@ export class GqlProvider {
 
     // for recursion
     private arrPath: Array<string>;
+    private args: any;
+    private field: Field;
+    private fieldFullPath: string;
 
     constructor(private logger: ILogger,
                 private postProcessFn = (obj: any) => obj) {
@@ -47,6 +52,7 @@ export class GqlProvider {
     executeFn = (obj: any): string => {
         this.logger.log('--------------------------------------------------');
         this.data = { typeObj: new Array<any>(), resultObj: new Array<any>() };
+        this.fieldFullPath = '';
 
         try {
             this.parse(obj);
@@ -84,26 +90,26 @@ export class GqlProvider {
             if (!GqlProvider.check({fieldName}))
                 return;
 
-            const fieldFullPath = `${prevPath}.${fieldName}`;
-            const args = GqlProvider.extractArguments(selection);
-            const field = this.resolveFields[fieldName];
+            this.fieldFullPath = GqlProvider.getFullFieldPath(prevPath, fieldName);
+            this.args = GqlProvider.extractArguments(selection);
+            this.field = this.resolveFields[this.fieldFullPath];
 
             try {
-                if (_.isFunction(field?.resolveFunc))
-                    field.resolveFunc(this.data, args, fieldFullPath);
+                if (_.isFunction(this.field?.resolveFunc) && prevPath.length == 0)
+                    this.field.resolveFunc(this.data, this.args);
                 else
-                    this.generalResolveFunc(this.data, fieldFullPath);
+                    this.generalResolveFunc(this.data, this.fieldFullPath);
             } catch (err) {
                 this.logger.log(`*** Error on call of resolve function for field \"${fieldName}\". ${err}`);
                 return;
             }
 
-            this.parse(selection, fieldFullPath);
+            this.parse(selection, this.fieldFullPath);
         }
     }
 
     generalResolveFunc = (data: Data, fieldFullPath: string) => {
-        this.arrPath = GqlProvider.splitFullFieldPath(fieldFullPath);
+        this.arrPath = this.fieldFullPath.split(GqlProvider.pathDelim);
         this.recursiveResolveFuncInner(data.typeObj, data.resultObj, 1);
     }
 
@@ -120,21 +126,25 @@ export class GqlProvider {
             else
                 if (depth == maxDepth)
                     // action
-                    GqlProvider.fillResultObj(typeObj, resultObj, fieldName);
+                    this.fillResultObj(typeObj, resultObj, fieldName);
                 else
                     this.recursiveResolveFuncInner(typeObj[fieldName], resultObj[fieldName], depth + 1);
     }
 
-    private static fillResultObj = (typeObj: any, resultObj: any, fieldName: string) => {
-        if (_.isArray(typeObj[fieldName])) {
-            resultObj[fieldName] = new Array<any>();
-            for (let i = 0; i < typeObj[fieldName].length; i++)
-                resultObj[fieldName].push({  });
+    private fillResultObj = (typeObj: any, resultObj: any, fieldName: string) => {
+        if (_.isFunction(this.field?.resolveFunc))
+            this.field.resolveFunc({ typeObj, resultObj }, this.args);
+        else {
+            if (_.isArray(typeObj[fieldName])) {
+                resultObj[fieldName] = new Array<any>();
+                for (let i = 0; i < typeObj[fieldName].length; i++)
+                    resultObj[fieldName].push({  });
+            }
+            else
+                resultObj[fieldName] = _.isNil(typeObj[fieldName].id)
+                    ? /* simple */  typeObj[fieldName]
+                    : /* complex */ {  };
         }
-        else
-            resultObj[fieldName] = _.isNil(typeObj[fieldName].id)
-                ? /* simple */  typeObj[fieldName]
-                : /* complex */ {  };
     }
 
     private static extractArguments = (selection: any): any => {
@@ -152,7 +162,7 @@ export class GqlProvider {
     setResolveFunctionsForFields = (...arrArgs: Array<Field>): GqlProvider => {
         for (let i = 0; i < arrArgs.length; i++) {
             const field = arrArgs[i];
-            this.resolveFields[field.fieldName] = field;
+            this.resolveFields[field.fullFieldPath] = field;
         }
 
         return this;
@@ -178,6 +188,9 @@ export class GqlProvider {
         }
     }
 
-    private static splitFullFieldPath = (fieldFullPath: string): Array<string> =>
-        fieldFullPath.substr(1, fieldFullPath.length - 1).split('.');
+    private static getFullFieldPath = (prevPath: string, fieldName: string): string => {
+        const prefix = prevPath.length > 0 ? `${prevPath}${GqlProvider.pathDelim}` : '';
+        let temp = `${prefix}${fieldName}`;
+        return temp.substr(0, temp.length);
+    }
 }
