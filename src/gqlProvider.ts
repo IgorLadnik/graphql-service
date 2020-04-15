@@ -22,7 +22,8 @@ export class GqlProvider {
     // for recursion
     private arrPath: Array<string>;
 
-    constructor(private logger: ILogger) {
+    constructor(private logger: ILogger,
+                private postProcessFn = (obj: any) => obj) {
         const config = new GraphQLObjectType({ name: 'Query' }).toConfig();
         config.fields['_'] = GqlProvider.createFreshDummyField();
         this.schema = new GraphQLSchema({ query: new GraphQLObjectType(config) });
@@ -54,9 +55,18 @@ export class GqlProvider {
             this.logger.log(`*** Error on executeFn: ${err}`);
         }
 
-        this.logger.log(GqlProvider.jsonStringifyFormatted(this.data.resultObj));
+        let result = GqlProvider.createOutput(this.data.resultObj);
+
+        try {
+            result = this.postProcessFn(result);
+        }
+        catch (err) {
+             this.logger.log(`Error in \"postProcessFn()\": ${err}`);
+        }
+
+        this.logger.log(GqlProvider.jsonStringifyFormatted(result));
         this.logger.log('--------------------------------------------------');
-        return this.createOutput();
+        return result;
     }
 
     // Recursive
@@ -160,10 +170,13 @@ export class GqlProvider {
         //JSON.stringify(jsObj, null, 4);    // stringify with 4 spaces at each level
         JSON.stringify(obj, null, '\t')
 
-    private createOutput = (): any =>
-        this.data.resultObj.length > 0
-            ? this.data.resultObj
-            : '???';
+    private static createOutput = (arr: Array<any>): any => {
+        switch (arr.length) {
+            case 0:  return 'Empty';
+            case 1:  return arr[0];
+            default: return arr;
+        }
+    }
 
     private static splitFullFieldPath = (fieldFullPath: string): Array<string> =>
         fieldFullPath.substr(1, fieldFullPath.length - 1).split('.');
