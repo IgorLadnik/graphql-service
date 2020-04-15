@@ -46,8 +46,7 @@ export class GqlProvider {
     executeFn = (obj: any): string => {
         this.logger.log('--------------------------------------------------');
         this.data = { typeObj: new Array<any>(), resultObj: new Array<any>() };
-        //this.arrPath = new Array<string>();
-
+        
         try {
             this.parse(obj);
         }
