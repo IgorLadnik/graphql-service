@@ -4,14 +4,20 @@ import { DocumentNode, GraphQLError } from "graphql";
 import _ from 'lodash';
 import { ILogger } from "./logger";
 import { ValidationRule } from "graphql/validation/ValidationContext";
+import { User, ChatMessage, Chat, Role } from "./types";
 
 export interface ResolveFieldsMap {
     [fieldName: string]: Field;
 }
 
+export interface TypesMap {
+    [fieldName: string]: any;
+}
+
 export type Field = { fullFieldPath: string, resolveFunc: ResolveFunction };
 export type ResolveFunction = (data: Data, args: any) => void;
 export type Data = { typeObj: any, resultObj: any };
+export type ActionDescription = { fieldName: string, arrPath: Array<string>, outputTypeName: string, isArray: boolean, args: any, children: Array<ActionDescription> };
 
 export class GqlProvider {
     private static readonly pathDelim = '.';
@@ -25,13 +31,18 @@ export class GqlProvider {
     private arrPath: Array<string>;
     private args: any;
     private field: Field;
-    //private fieldFullPath: string;
+    private readonly types: TypesMap = { };
 
     constructor(private logger: ILogger,
                 private postProcessFn = (obj: any) => obj) {
         const config = new GraphQLObjectType({ name: 'Query' }).toConfig();
         config.fields['_'] = GqlProvider.createFreshDummyField();
         this.schema = new GraphQLSchema({ query: new GraphQLObjectType(config) });
+
+        //TEMP hardcoded
+        this.types['User'] = { type: 'User', id: 0, name: '', email: '', role: '' };
+        this.types['ChatMessage'] = { type: 'ChatMessage', id: 0, content: '', time: '', author: this.types['User'] };
+        this.types['Chat'] = { type: 'Chat', id: 0, participants: [this.types['User']], messages: [this.types['ChatMessage']] };
     }
 
     private static createFreshDummyField = () => {
@@ -52,7 +63,6 @@ export class GqlProvider {
     executeFn = (obj: any): string => {
         this.logger.log('--------------------------------------------------');
         this.data = { typeObj: new Array<any>(), resultObj: new Array<any>() };
-        //this.fieldFullPath = '';
 
         try {
             this.parse(obj);
@@ -94,6 +104,8 @@ export class GqlProvider {
             this.args = GqlProvider.extractArguments(selection);
             this.field = this.resolveFields[fieldFullPath];
 
+            this.logger.log(`parse => ${fieldFullPath}, args = ${this.args}`);
+
             try {
                 if (_.isFunction(this.field?.resolveFunc) && prevPath.length == 0)
                     this.field.resolveFunc(this.data, this.args);
@@ -110,25 +122,57 @@ export class GqlProvider {
 
     generalResolveFunc = (data: Data, fieldFullPath: string) => {
         this.arrPath = fieldFullPath.split(GqlProvider.pathDelim);
-        this.recursiveResolveFuncInner(data.typeObj, data.resultObj, 1);
+        this.recursiveResolveFuncInner(data.typeObj, data.resultObj);
     }
 
-    private recursiveResolveFuncInner = (typeObj: any, resultObj: any, depth: number) => {
-        const maxDepth = this.arrPath.length - 1;
+    private recursiveResolveFuncInner = (typeObj: any, resultObj: any) => {
+        const depth = this.arrPath.length - 1;
         const fieldName = this.arrPath[depth];
 
-        if (_.isArray(typeObj))
-            for (let i = 0; i < typeObj.length; i++)
-                this.recursiveResolveFuncInner(typeObj[i], resultObj[i], depth);
+        let parent;
+        for (let i = 0; i < resultObj.length; i++)
+            parent = this.getParentDescription(resultObj[i]);
+
+        if (!_.isNil(parent)) {
+            const field = this.types[parent.outputTypeName][fieldName];
+            if (!_.isNil(field)) {
+                const isArray = _.isArray(field);
+                const obj = isArray ? field[0] : field;
+                const type = _.isNil(obj.type) ? typeof obj : obj.type;
+                parent.children.push({
+                    fieldName,
+                    arrPath: this.arrPath,
+                    outputTypeName: type,
+                    isArray: isArray,
+                    args: this.args,
+                    children: new Array<ActionDescription>()
+                });
+            }
+        }
+    }
+
+    private getParentDescription = (obj: any): any => {
+        if (GqlProvider.isParent(obj, this.arrPath))
+            return obj;
         else
-            if (_.isNil(typeObj[fieldName]))
-                this.recursiveResolveFuncInner(typeObj, resultObj, depth);
-            else
-                if (depth == maxDepth)
-                    // action
-                    this.fillResultObj(typeObj, resultObj, fieldName);
-                else
-                    this.recursiveResolveFuncInner(typeObj[fieldName], resultObj[fieldName], depth + 1);
+            for (let i = 0; i < obj.children.length; i++) {
+                const parent = this.getParentDescription(obj.children[i]);
+                if (!_.isNil(parent))
+                    return parent;
+            }
+
+        return null;
+    }
+
+    private static isParent(saved: any, current: Array<string>): boolean {
+        if (saved.arrPath.length + 1 !== current.length)
+            return false;
+
+        for (let i = 0; i < saved.arrPath.length; i++)
+            if (saved.arrPath[i].toLowerCase() !== current[i].toLowerCase())
+                return false;
+
+        return true;
     }
 
     private fillResultObj = (typeObj: any, resultObj: any, fieldName: string) => {
@@ -137,13 +181,24 @@ export class GqlProvider {
         else {
             if (_.isArray(typeObj[fieldName])) {
                 resultObj[fieldName] = new Array<any>();
-                for (let i = 0; i < typeObj[fieldName].length; i++)
-                    resultObj[fieldName].push({  });
+                this.logger.log(`   fillResultObj => ${fieldName}: create array, args = ${this.args}`);
+                for (let i = 0; i < typeObj[fieldName].length; i++) {
+                    resultObj[fieldName].push({});
+                    this.logger.log(`   fillResultObj => ${fieldName}: push to array, args = ${this.args}`);
+                }
             }
-            else
-                resultObj[fieldName] = _.isNil(typeObj[fieldName].id)
-                    ? /* simple */  typeObj[fieldName]
-                    : /* complex */ {  };
+            else {
+                if (_.isNil(typeObj[fieldName].id)) {
+                    // simple
+                    resultObj[fieldName] = typeObj[fieldName];
+                    this.logger.log(`   fillResultObj => ${fieldName}: set value for simple object, args = ${this.args}`);
+                }
+                else {
+                    // complex
+                    resultObj[fieldName] = { };
+                    this.logger.log(`   fillResultObj => ${fieldName}: create empty object for future use, args = ${this.args}`);
+                }
+            }
         }
     }
 
