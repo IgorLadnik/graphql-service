@@ -118,7 +118,7 @@ export class GqlProvider {
                 creatingObj[fieldName].push({  });
         }
         else
-            creatingObj[fieldName] = _.isNil(actualObj[fieldName].name) || _.isNil(actualObj[fieldName].id)
+            creatingObj[fieldName] = _.isNil(actualObj[fieldName].id)
                 ? /* simple */  actualObj[fieldName]
                 : /* complex */ {  };
     }
