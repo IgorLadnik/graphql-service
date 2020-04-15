@@ -4,20 +4,19 @@ import { DocumentNode, GraphQLError } from "graphql";
 import _ from 'lodash';
 import { ILogger } from "./logger";
 import { ValidationRule } from "graphql/validation/ValidationContext";
-import { User, ChatMessage, Chat, Role } from "./types";
 
 export interface ResolveFieldsMap {
     [fieldName: string]: Field;
 }
 
 export interface TypesMap {
-    [fieldName: string]: any;
+    [typeName: string]: Type;
 }
 
+export type Type = { typeName: string, typeObject: any };
 export type Field = { fullFieldPath: string, resolveFunc: ResolveFunction };
-export type ResolveFunction = (data: Data, args: any) => void;
-export type Data = { typeObj: any, resultObj: any };
-export type ActionDescription = { fieldName: string, arrPath: Array<string>, outputTypeName: string, isArray: boolean, args: any, children: Array<ActionDescription> };
+export type ResolveFunction = (actionTree: any, args: any) => void;
+export type FieldDescription = { fieldName: string, arrPath: Array<string>, outputTypeName: string, isArray: boolean, args: any, children: Array<FieldDescription> };
 
 export class GqlProvider {
     private static readonly pathDelim = '.';
@@ -25,7 +24,7 @@ export class GqlProvider {
     readonly schema: any;
 
     private resolveFields: ResolveFieldsMap = { };
-    private data: Data;
+    private actionTree: any;
 
     // for recursion
     private arrPath: Array<string>;
@@ -33,16 +32,10 @@ export class GqlProvider {
     private field: Field;
     private readonly types: TypesMap = { };
 
-    constructor(private logger: ILogger,
-                private postProcessFn = (obj: any) => obj) {
+    constructor(private logger: ILogger) {
         const config = new GraphQLObjectType({ name: 'Query' }).toConfig();
         config.fields['_'] = GqlProvider.createFreshDummyField();
         this.schema = new GraphQLSchema({ query: new GraphQLObjectType(config) });
-
-        //TEMP hardcoded
-        this.types['User'] = { type: 'User', id: 0, name: '', email: '', role: '' };
-        this.types['ChatMessage'] = { type: 'ChatMessage', id: 0, content: '', time: '', author: this.types['User'] };
-        this.types['Chat'] = { type: 'Chat', id: 0, participants: [this.types['User']], messages: [this.types['ChatMessage']] };
     }
 
     private static createFreshDummyField = () => {
@@ -62,7 +55,7 @@ export class GqlProvider {
 
     executeFn = (obj: any): string => {
         this.logger.log('--------------------------------------------------');
-        this.data = { typeObj: new Array<any>(), resultObj: new Array<any>() };
+        this.actionTree = new Array<any>();
 
         try {
             this.parse(obj);
@@ -71,14 +64,10 @@ export class GqlProvider {
             this.logger.log(`*** Error on executeFn: ${err}`);
         }
 
-        let result = GqlProvider.createOutput(this.data.resultObj);
+        //TODO
+        // Actual data processing should be added here according to this.actionTree
 
-        try {
-            result = this.postProcessFn(result);
-        }
-        catch (err) {
-             this.logger.log(`Error in \"postProcessFn()\": ${err}`);
-        }
+        let result = GqlProvider.createOutput(this.actionTree);
 
         this.logger.log(GqlProvider.jsonStringifyFormatted(result));
         this.logger.log('--------------------------------------------------');
@@ -104,13 +93,11 @@ export class GqlProvider {
             this.args = GqlProvider.extractArguments(selection);
             this.field = this.resolveFields[fieldFullPath];
 
-            this.logger.log(`parse => ${fieldFullPath}, args = ${this.args}`);
-
             try {
                 if (_.isFunction(this.field?.resolveFunc) && prevPath.length == 0)
-                    this.field.resolveFunc(this.data, this.args);
+                    this.field.resolveFunc(this.actionTree, this.args);
                 else
-                    this.generalResolveFunc(this.data, fieldFullPath);
+                    this.generalResolveFunc(fieldFullPath);
             } catch (err) {
                 this.logger.log(`*** Error on call of resolve function for field \"${fieldName}\". ${err}`);
                 return;
@@ -120,21 +107,18 @@ export class GqlProvider {
         }
     }
 
-    generalResolveFunc = (data: Data, fieldFullPath: string) => {
+    generalResolveFunc = (fieldFullPath: string) => {
         this.arrPath = fieldFullPath.split(GqlProvider.pathDelim);
-        this.recursiveResolveFuncInner(data.typeObj, data.resultObj);
-    }
 
-    private recursiveResolveFuncInner = (typeObj: any, resultObj: any) => {
         const depth = this.arrPath.length - 1;
         const fieldName = this.arrPath[depth];
 
         let parent;
-        for (let i = 0; i < resultObj.length; i++)
-            parent = this.getParentDescription(resultObj[i]);
+        for (let i = 0; i < this.actionTree.length; i++)
+            parent = this.getParent(this.actionTree[i]);
 
         if (!_.isNil(parent)) {
-            const field = this.types[parent.outputTypeName][fieldName];
+            const field = this.types[parent.outputTypeName].typeObject[fieldName];
             if (!_.isNil(field)) {
                 const isArray = _.isArray(field);
                 const obj = isArray ? field[0] : field;
@@ -145,18 +129,19 @@ export class GqlProvider {
                     outputTypeName: type,
                     isArray: isArray,
                     args: this.args,
-                    children: new Array<ActionDescription>()
+                    children: new Array<FieldDescription>()
                 });
             }
         }
     }
 
-    private getParentDescription = (obj: any): any => {
-        if (GqlProvider.isParent(obj, this.arrPath))
+    // Recursive
+    private getParent = (obj: any): any => {
+        if (this.isParent(obj))
             return obj;
         else
             for (let i = 0; i < obj.children.length; i++) {
-                const parent = this.getParentDescription(obj.children[i]);
+                const parent = this.getParent(obj.children[i]);
                 if (!_.isNil(parent))
                     return parent;
             }
@@ -164,42 +149,15 @@ export class GqlProvider {
         return null;
     }
 
-    private static isParent(saved: any, current: Array<string>): boolean {
-        if (saved.arrPath.length + 1 !== current.length)
+    private isParent(parentCandidate: any): boolean {
+        if (parentCandidate.arrPath.length + 1 !== this.arrPath.length)
             return false;
 
-        for (let i = 0; i < saved.arrPath.length; i++)
-            if (saved.arrPath[i].toLowerCase() !== current[i].toLowerCase())
+        for (let i = 0; i < parentCandidate.arrPath.length; i++)
+            if (parentCandidate.arrPath[i].toLowerCase() !== this.arrPath[i].toLowerCase())
                 return false;
 
         return true;
-    }
-
-    private fillResultObj = (typeObj: any, resultObj: any, fieldName: string) => {
-        if (_.isFunction(this.field?.resolveFunc))
-            this.field.resolveFunc({ typeObj, resultObj }, this.args);
-        else {
-            if (_.isArray(typeObj[fieldName])) {
-                resultObj[fieldName] = new Array<any>();
-                this.logger.log(`   fillResultObj => ${fieldName}: create array, args = ${this.args}`);
-                for (let i = 0; i < typeObj[fieldName].length; i++) {
-                    resultObj[fieldName].push({});
-                    this.logger.log(`   fillResultObj => ${fieldName}: push to array, args = ${this.args}`);
-                }
-            }
-            else {
-                if (_.isNil(typeObj[fieldName].id)) {
-                    // simple
-                    resultObj[fieldName] = typeObj[fieldName];
-                    this.logger.log(`   fillResultObj => ${fieldName}: set value for simple object, args = ${this.args}`);
-                }
-                else {
-                    // complex
-                    resultObj[fieldName] = { };
-                    this.logger.log(`   fillResultObj => ${fieldName}: create empty object for future use, args = ${this.args}`);
-                }
-            }
-        }
     }
 
     private static extractArguments = (selection: any): any => {
@@ -212,6 +170,15 @@ export class GqlProvider {
         }
 
         return resolveArgs;
+    }
+
+    setTypes = (...arrArgs: Array<any>): GqlProvider => {
+        for (let i = 0; i < arrArgs.length; i++) {
+            const type = arrArgs[i];
+            this.types[type.typeName] = type;
+        }
+
+        return this;
     }
 
     setResolveFunctionsForFields = (...arrArgs: Array<Field>): GqlProvider => {
