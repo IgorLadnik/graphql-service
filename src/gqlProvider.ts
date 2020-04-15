@@ -11,7 +11,7 @@ export interface ResolveFieldsMap {
 
 export type Field = { fieldName: string, resolveFunc: ResolveFunction };
 export type ResolveFunction = (data: Data, args: any, fieldFullPath: string) => void;
-export type Data = { actualObj: any, creatingObj: any };
+export type Data = { typeObj: any, resultObj: any };
 
 export class GqlProvider {
     readonly schema: any;
@@ -45,7 +45,7 @@ export class GqlProvider {
 
     executeFn = (obj: any): string => {
         this.logger.log('--------------------------------------------------');
-        this.data = { actualObj: new Array<any>(), creatingObj: new Array<any>() };
+        this.data = { typeObj: new Array<any>(), resultObj: new Array<any>() };
         //this.arrPath = new Array<string>();
 
         try {
@@ -55,7 +55,7 @@ export class GqlProvider {
             this.logger.log(`*** Error on executeFn: ${err}`);
         }
 
-        this.logger.log(GqlProvider.jsonStringifyFormatted(this.data.creatingObj));
+        this.logger.log(GqlProvider.jsonStringifyFormatted(this.data.resultObj));
         this.logger.log('--------------------------------------------------');
         return this.createOutput();
     }
@@ -95,36 +95,36 @@ export class GqlProvider {
 
     generalResolveFunc = (data: Data, fieldFullPath: string) => {
         this.arrPath = GqlProvider.splitFullFieldPath(fieldFullPath);
-        this.recursiveResolveFuncInner(data.actualObj, data.creatingObj, 1);
+        this.recursiveResolveFuncInner(data.typeObj, data.resultObj, 1);
     }
 
-    private recursiveResolveFuncInner = (actualObj: any, creatingObj: any, depth: number) => {
+    private recursiveResolveFuncInner = (typeObj: any, resultObj: any, depth: number) => {
         const maxDepth = this.arrPath.length - 1;
         const fieldName = this.arrPath[depth];
 
-        if (_.isArray(actualObj))
-            for (let i = 0; i < actualObj.length; i++)
-                this.recursiveResolveFuncInner(actualObj[i], creatingObj[i], depth);
+        if (_.isArray(typeObj))
+            for (let i = 0; i < typeObj.length; i++)
+                this.recursiveResolveFuncInner(typeObj[i], resultObj[i], depth);
         else
-            if (_.isNil(actualObj[fieldName]))
-                this.recursiveResolveFuncInner(actualObj, creatingObj, depth);
+            if (_.isNil(typeObj[fieldName]))
+                this.recursiveResolveFuncInner(typeObj, resultObj, depth);
             else
                 if (depth == maxDepth)
                     // action
-                    GqlProvider.fillCreatingObj(actualObj, creatingObj, fieldName);
+                    GqlProvider.fillresultObj(typeObj, resultObj, fieldName);
                 else
-                    this.recursiveResolveFuncInner(actualObj[fieldName], creatingObj[fieldName], depth + 1);
+                    this.recursiveResolveFuncInner(typeObj[fieldName], resultObj[fieldName], depth + 1);
     }
 
-    private static fillCreatingObj = (actualObj: any, creatingObj: any, fieldName: string) => {
-        if (_.isArray(actualObj[fieldName])) {
-            creatingObj[fieldName] = new Array<any>();
-            for (let i = 0; i < actualObj[fieldName].length; i++)
-                creatingObj[fieldName].push({  });
+    private static fillresultObj = (typeObj: any, resultObj: any, fieldName: string) => {
+        if (_.isArray(typeObj[fieldName])) {
+            resultObj[fieldName] = new Array<any>();
+            for (let i = 0; i < typeObj[fieldName].length; i++)
+                resultObj[fieldName].push({  });
         }
         else
-            creatingObj[fieldName] = _.isNil(actualObj[fieldName].id)
-                ? /* simple */  actualObj[fieldName]
+            resultObj[fieldName] = _.isNil(typeObj[fieldName].id)
+                ? /* simple */  typeObj[fieldName]
                 : /* complex */ {  };
     }
 
@@ -162,8 +162,8 @@ export class GqlProvider {
         JSON.stringify(obj, null, '\t')
 
     private createOutput = (): any =>
-        this.data.creatingObj.length > 0
-            ? this.data.creatingObj
+        this.data.resultObj.length > 0
+            ? this.data.resultObj
             : '???';
 
     private static splitFullFieldPath = (fieldFullPath: string): Array<string> =>

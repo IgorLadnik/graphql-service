@@ -48,16 +48,16 @@ import { Logger } from "./logger";
             fieldName: 'user',
             resolveFunc: (data, args, fieldFullPath) => {
                 const selectedUser = users[args.id];
-                data.actualObj.push(selectedUser);
-                data.creatingObj.push({ type: selectedUser.type, id: selectedUser.id });
+                data.typeObj.push(selectedUser);
+                data.resultObj.push({ type: selectedUser.type, id: selectedUser.id });
             }
         },
         {
             fieldName: 'myChats',
             resolveFunc: (data, args, fieldFullPath) => {
                 for (let i = 0; i < 2; i++) {
-                    data.actualObj.push(chats[i]);
-                    data.creatingObj.push({ type: chats[i].type, id: chats[i].id });
+                    data.typeObj.push(chats[i]);
+                    data.resultObj.push({ type: chats[i].type, id: chats[i].id });
                 }
             }
         },
