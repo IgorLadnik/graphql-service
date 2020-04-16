@@ -89,31 +89,9 @@ import { User, ChatMessage, Chat, Role } from "./types";
 /* Queries
 
 query {
-  me {
-	id
-    email
-  }
-}
-
-query {
   user(id: 1) {
 	name
     id
-  }
-}
-
-query {
-  allUsers {
-	role
-    name
-    id
-  }
-}
-
-query {
-  search(term: "Users") {
-	id
-    email
   }
 }
 
