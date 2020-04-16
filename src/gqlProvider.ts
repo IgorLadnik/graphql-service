@@ -167,6 +167,7 @@ export class GqlProvider {
     }
 
     private static extractArguments = (selection: any): any => {
+        //TODO: processing of complex args (objects) should be addressed here
         let resolveArgs: any;
         for (let i = 0; i < selection.arguments.length; i++) {
             if (i === 0)
