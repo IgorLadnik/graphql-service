@@ -44,11 +44,7 @@ import { User, ChatMessage, Chat, Role } from "./types";
     // Settings for gqlProvider.
     // Placed after start listening for test purposes.
     gqlProvider
-        .setTypes(
-            { typeName: 'User',        typeObject: User },
-            { typeName: 'ChatMessage', typeObject: ChatMessage },
-            { typeName: 'Chat',        typeObject: Chat },
-        )
+        .setTypes(User, ChatMessage, Chat)
         .setFieldProcessingArguments(
             {
                 fullFieldPath: 'user',

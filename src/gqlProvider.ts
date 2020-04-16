@@ -9,11 +9,6 @@ export interface ResolveFieldsMap {
     [fieldName: string]: Field;
 }
 
-export interface TypesMap {
-    [typeName: string]: Type;
-}
-
-export type Type = { typeName: string, typeObject: any };
 export type Field = { fullFieldPath: string, type: string, resolveFunc: ResolveFunction };
 export type ResolveFunction = (actionTree: any, args: any) => void;
 export type FieldDescription = { fieldName: string, arrPath: Array<string>, outputTypeName: string, isArray: boolean, args: any, children: Array<FieldDescription> };
@@ -30,7 +25,7 @@ export class GqlProvider {
     private arrPath: Array<string>;
     private args: any;
     private field: Field;
-    private readonly types: TypesMap = { };
+    private readonly types = Array<any>();
 
     constructor(private logger: ILogger) {
         const config = new GraphQLObjectType({ name: 'Query' }).toConfig();
@@ -121,12 +116,12 @@ export class GqlProvider {
         const depth = this.arrPath.length - 1;
         const fieldName = this.arrPath[depth];
 
-        let parent;
+        let parent: any;
         for (let i = 0; i < this.actionTree.length; i++)
             parent = this.getParent(this.actionTree[i]);
 
         if (!_.isNil(parent)) {
-            const field = this.types[parent.outputTypeName].typeObject[fieldName];
+            const field = _.filter(this.types, t => t.type === parent.outputTypeName)[0][fieldName];
             if (!_.isNil(field)) {
                 const isArray = _.isArray(field);
                 const obj = isArray ? field[0] : field;
@@ -184,10 +179,8 @@ export class GqlProvider {
     }
 
     setTypes = (...arrArgs: Array<any>): GqlProvider => {
-        for (let i = 0; i < arrArgs.length; i++) {
-            const type = arrArgs[i];
-            this.types[type.typeName] = type;
-        }
+        for (let i = 0; i < arrArgs.length; i++)
+            this.types.push(arrArgs[i]);
 
         return this;
     }
