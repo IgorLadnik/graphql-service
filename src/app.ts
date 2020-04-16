@@ -5,7 +5,7 @@ import graphqlHTTP from 'express-graphql';
 import { GqlProvider, FieldDescription } from './gqlProvider';
 import { ExecutionArgs, GraphQLError } from "graphql";
 import { Logger } from "./logger";
-import { userTypeObj, chatMessageTypeObj, chatTypeObj, Role } from "./types";
+import { User, ChatMessage, Chat, Role } from "./types";
 
 (async function main() {
     const app = express();
@@ -45,9 +45,9 @@ import { userTypeObj, chatMessageTypeObj, chatTypeObj, Role } from "./types";
     // Placed after start listening for test purposes.
     gqlProvider
         .setTypes(
-            { typeName: 'User',        typeObject: userTypeObj },
-            { typeName: 'ChatMessage', typeObject: chatMessageTypeObj },
-            { typeName: 'Chat',        typeObject: chatTypeObj },
+            { typeName: 'User',        typeObject: User },
+            { typeName: 'ChatMessage', typeObject: ChatMessage },
+            { typeName: 'Chat',        typeObject: Chat },
         )
         .setFieldProcessingArguments(
             {
