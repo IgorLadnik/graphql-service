@@ -1,7 +1,7 @@
 {
-  "name": "codegen07-service",
+  "name": "graphql-schemaless-service",
   "version": "1.0.0",
-  "description": "NodeJS server with Typescript, express and GraphQL",
+  "description": "GraphQL schemaless service",
   "main": "src/app.js",
   "scripts": {
     "build": "tsc",
@@ -11,10 +11,8 @@
     "nodejs",
     "typescript",
     "graphql",
-    "apollo",
     "express"
   ],
-  "author": "Thomas Guibert",
   "license": "ISC",
   "devDependencies": {
     "@types/compression": "0.0.36",

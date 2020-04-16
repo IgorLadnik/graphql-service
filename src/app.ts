@@ -35,7 +35,7 @@ import { User, ChatMessage, Chat, Role } from "./types";
 
     try {
         await app.listen(port);
-        logger.log(`\n--- GraphQL is running on ${address}`);
+        logger.log(`\n--- GraphQL schemaless service is listening on ${address}`);
     }
     catch (err) {
         logger.log(`\n*** Error to listen on ${address}. ${err}`)
