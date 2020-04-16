@@ -48,14 +48,14 @@ import { User, ChatMessage, Chat, Role } from "./types";
         .setFieldProcessingArguments(
             {
                 fullFieldPath: 'user',
-                type: 'User',
+                type: User,
                 resolveFunc: (actionTree, args) => {
 
                 }
             },
             {
                 fullFieldPath: 'myChats',
-                type: 'Chat',
+                type: Chat,
                 resolveFunc: (actionTree, args) => {
 
                 }

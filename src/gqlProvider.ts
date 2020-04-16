@@ -9,7 +9,7 @@ export interface ResolveFieldsMap {
     [fieldName: string]: Field;
 }
 
-export type Field = { fullFieldPath: string, type: string, resolveFunc: ResolveFunction };
+export type Field = { fullFieldPath: string, type: any, resolveFunc: ResolveFunction };
 export type ResolveFunction = (actionTree: any, args: any) => void;
 export type FieldDescription = { fieldName: string, arrPath: Array<string>, outputTypeName: string, isArray: boolean, args: any, children: Array<FieldDescription> };
 
@@ -108,7 +108,7 @@ export class GqlProvider {
     }
 
     private setUpmostFieldType = (fieldName: string) =>
-        this.pushToActionTree(this.actionTree, fieldName, [fieldName], this.field.type, true)
+        this.pushToActionTree(this.actionTree, fieldName, [fieldName], this.field.type.type, true)
 
     private setGeneralFieldType = (fieldFullPath: string) => {
         this.arrPath = fieldFullPath.split(GqlProvider.pathDelim);
