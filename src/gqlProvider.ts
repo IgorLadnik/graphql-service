@@ -172,7 +172,17 @@ export class GqlProvider {
             if (i === 0)
                 resolveArgs = { };
             const argument = selection.arguments[i];
-            resolveArgs[argument.name.value] = parseInt(argument.value.value);
+            switch (argument.value.kind) {
+                case 'IntValue':
+                    resolveArgs[argument.name.value] = parseInt(argument.value.value);
+                    break;
+                case 'FloatValue':
+                    resolveArgs[argument.name.value] = parseFloat(argument.value.value);
+                    break;
+                default:
+                    resolveArgs[argument.name.value] = argument.value.value;
+                    break;
+            }
         }
 
         return resolveArgs;
