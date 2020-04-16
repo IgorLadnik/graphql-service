@@ -14,7 +14,7 @@ export interface TypesMap {
 }
 
 export type Type = { typeName: string, typeObject: any };
-export type Field = { fullFieldPath: string, resolveFunc: ResolveFunction };
+export type Field = { fullFieldPath: string, type: string, resolveFunc: ResolveFunction };
 export type ResolveFunction = (actionTree: any, args: any) => void;
 export type FieldDescription = { fieldName: string, arrPath: Array<string>, outputTypeName: string, isArray: boolean, args: any, children: Array<FieldDescription> };
 
@@ -75,10 +75,10 @@ export class GqlProvider {
     }
 
     // Recursive
-    private parse = (upperSelection: any, prevPath: string = '') => {
-        let selectionSet = upperSelection?.selectionSet;
+    private parse = (currentSelection: any, prevPath: string = '') => {
+        let selectionSet = currentSelection?.selectionSet;
         if (!selectionSet)
-            return Array<any>();
+            return;
 
         let selections = selectionSet.selections;
 
@@ -94,12 +94,17 @@ export class GqlProvider {
             this.field = this.resolveFields[fieldFullPath];
 
             try {
-                if (_.isFunction(this.field?.resolveFunc) && prevPath.length == 0)
-                    this.field.resolveFunc(this.actionTree, this.args);
+                if (prevPath.length == 0) {
+                    if (!_.isNil(this.field?.type))
+                        this.setUpmostFieldType(fieldName);
+                    else
+                        this.logger.log(`*** Error on set upmost field type for field \"${fieldName}\". ` +
+                                             'Type name is not provided.');
+                }
                 else
-                    this.generalResolveFunc(fieldFullPath);
+                    this.setGeneralFieldType(fieldFullPath);
             } catch (err) {
-                this.logger.log(`*** Error on call of resolve function for field \"${fieldName}\". ${err}`);
+                this.logger.log(`*** Error on set field type for field \"${fieldName}\". ${err}`);
                 return;
             }
 
@@ -107,7 +112,10 @@ export class GqlProvider {
         }
     }
 
-    generalResolveFunc = (fieldFullPath: string) => {
+    private setUpmostFieldType = (fieldName: string) =>
+        this.pushToActionTree(this.actionTree, fieldName, [fieldName], this.field.type, true)
+
+    private setGeneralFieldType = (fieldFullPath: string) => {
         this.arrPath = fieldFullPath.split(GqlProvider.pathDelim);
 
         const depth = this.arrPath.length - 1;
@@ -123,17 +131,20 @@ export class GqlProvider {
                 const isArray = _.isArray(field);
                 const obj = isArray ? field[0] : field;
                 const type = _.isNil(obj.type) ? typeof obj : obj.type;
-                parent.children.push({
-                    fieldName,
-                    arrPath: this.arrPath,
-                    outputTypeName: type,
-                    isArray: isArray,
-                    args: this.args,
-                    children: new Array<FieldDescription>()
-                });
+                this.pushToActionTree(parent.children, fieldName, this.arrPath, type, isArray);
             }
         }
     }
+
+    private pushToActionTree = (tree: any, fieldName: string, arrPath: Array<string>, outputTypeName: string, isArray: boolean) =>
+        tree.push({
+            fieldName,
+            arrPath,
+            outputTypeName,
+            isArray,
+            args: this.args,
+            children: new Array<FieldDescription>()
+        })
 
     // Recursive
     private getParent = (obj: any): any => {
@@ -181,7 +192,7 @@ export class GqlProvider {
         return this;
     }
 
-    setResolveFunctionsForFields = (...arrArgs: Array<Field>): GqlProvider => {
+    setFieldProcessingArguments = (...arrArgs: Array<Field>): GqlProvider => {
         for (let i = 0; i < arrArgs.length; i++) {
             const field = arrArgs[i];
             this.resolveFields[field.fullFieldPath] = field;
