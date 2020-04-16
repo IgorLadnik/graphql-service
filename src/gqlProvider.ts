@@ -77,8 +77,7 @@ export class GqlProvider {
 
         let selections = selectionSet.selections;
 
-        for (let i = 0; i < selections.length; i++) {
-            const selection = selections[i];
+        selections?.forEach((selection: any) => {
             const fieldName = selection.name.value;
 
             if (!GqlProvider.check({fieldName}))
@@ -104,7 +103,7 @@ export class GqlProvider {
             }
 
             this.parse(selection, fieldFullPath);
-        }
+        });
     }
 
     private setUpmostFieldType = (fieldName: string) =>
@@ -190,18 +189,12 @@ export class GqlProvider {
     }
 
     setTypes = (...arrArgs: Array<any>): GqlProvider => {
-        for (let i = 0; i < arrArgs.length; i++)
-            this.types.push(arrArgs[i]);
-
+        arrArgs?.forEach((args: any) => this.types.push(args));
         return this;
     }
 
     setFieldProcessingArguments = (...arrArgs: Array<Field>): GqlProvider => {
-        for (let i = 0; i < arrArgs.length; i++) {
-            const field = arrArgs[i];
-            this.resolveFields[field.fullFieldPath] = field;
-        }
-
+        arrArgs?.forEach((field: any) => this.resolveFields[field.fullFieldPath] = field);
         return this;
     }
 
