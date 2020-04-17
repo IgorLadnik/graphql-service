@@ -45,21 +45,29 @@ import { User, ChatMessage, Chat, Role } from "./types";
     // Placed after start listening for test purposes.
     gqlProvider
         .setTypes(User, ChatMessage, Chat)
-        .setFieldProcessingArguments(
+        .setResolvedFields(
             {
                 fullFieldPath: 'user',
                 type: User,
-                resolveFunc: (actionTree, args) => {
-
+                resolveFunc: (actionTree, args, context) => {
+                    console.log('topmost resolveFunc for user');
                 }
             },
             {
                 fullFieldPath: 'myChats',
                 type: Chat,
-                resolveFunc: (actionTree, args) => {
-
+                resolveFunc: (actionTree, args, context) => {
+                    console.log('topmost resolveFunc for myChats');
                 }
             },
+
+            {
+                fullFieldPath: 'myChats.messages.author.name',
+                type: String,
+                resolveFunc: (actionTree, args, context) => {
+                    console.log('resolveFunc for myChats.messages.author.name');
+                }
+            }
         );
 })();
 
@@ -97,15 +105,15 @@ query {
 
 query {
   myChats {
-	id
+    id
     participants {
-      name
+        name
     }
     messages {
-      author {
-      	name
-      }
-      text
+        author {
+            name
+        }
+        text
     }
   }
 }

@@ -5,12 +5,16 @@ import _ from 'lodash';
 import { ILogger } from "./logger";
 import { ValidationRule } from "graphql/validation/ValidationContext";
 
-export interface ResolveFieldsMap {
-    [fieldName: string]: Field;
+export interface ResolvedFieldsMap {
+    [fullFieldPath: string]: Field;
+}
+
+export interface ContextMap {
+    [property: string]: any;
 }
 
 export type Field = { fullFieldPath: string, type: any, resolveFunc: ResolveFunction };
-export type ResolveFunction = (actionTree: any, args: any) => void;
+export type ResolveFunction = (actionTree: any, args: any, context: any) => void;
 export type FieldDescription = {
     fieldName: string,
     arrPath: Array<string>,
@@ -25,15 +29,16 @@ export class GqlProvider {
 
     readonly schema: any;
 
-    private resolveFields: ResolveFieldsMap = { };
+    private resolvedFields: ResolvedFieldsMap = { };
     private actionTree: any;
     private errors: Array<string>;
 
-    // for recursion
+    // For recursion
     private arrPath: Array<string>;
     private args: any;
     private field: Field;
     private readonly types = Array<any>();
+    private context: ContextMap;
 
     constructor(private logger: ILogger) {
         const config = new GraphQLObjectType({ name: 'Query' }).toConfig();
@@ -60,6 +65,7 @@ export class GqlProvider {
         this.logger.log('--------------------------------------------------');
         this.errors = new Array<string>();
         this.actionTree = new Array<any>();
+        this.context = { };
 
         try {
             this.parse(obj);
@@ -70,11 +76,13 @@ export class GqlProvider {
 
         let output = '';
         if (this.errors.length === 0) {
-            //TODO
-            // Actual data processing should be added here according to this.actionTree
-
             output = GqlProvider.createOutput(this.actionTree);
             this.logger.log(GqlProvider.jsonStringifyFormatted(output));
+            this.logger.log('--------------------------------------------------');
+
+            //TODO
+            // Actual data processing should be added here according to this.actionTree
+            this.executeActionTree(this.actionTree);
         }
         else
             this.errors.forEach((error: string) => output += error);
@@ -99,11 +107,7 @@ export class GqlProvider {
 
             const fieldFullPath = GqlProvider.getFullFieldPath(prevPath, fieldName);
             this.args = GqlProvider.extractArguments(selection);
-            this.field = this.resolveFields[fieldFullPath];
-
-            if (_.isNil(this.field)) {
-                let o = 0;
-            }
+            this.field = this.resolvedFields[fieldFullPath];
 
             try {
                 if (prevPath.length == 0) {
@@ -214,8 +218,8 @@ export class GqlProvider {
         return this;
     }
 
-    setFieldProcessingArguments = (...arrArgs: Array<Field>): GqlProvider => {
-        arrArgs?.forEach((field: any) => this.resolveFields[field.fullFieldPath] = field);
+    setResolvedFields = (...arrArgs: Array<Field>): GqlProvider => {
+        arrArgs?.forEach((field: any) => this.resolvedFields[field.fullFieldPath] = field);
         return this;
     }
 
@@ -248,5 +252,58 @@ export class GqlProvider {
     private handleError = (errorMessage: string) => {
         this.logger.log(errorMessage);
         this.errors.push(errorMessage);
+    }
+
+    // Recursive
+    private executeActionTree = (arrField: Array<any>) => {
+        for (let i = 0; i < arrField.length; i++) {
+            let field = arrField[i];
+            let fullFieldPath = GqlProvider.composeFullFieldPath(field.arrPath);
+            this.logger.log(fullFieldPath);
+            const resolvedField = this.resolvedFields[fullFieldPath];
+            try {
+                if (!_.isNil(resolvedField))
+                    resolvedField.resolveFunc(this.actionTree, field.args, this.context);
+                else {
+                    const type = this.findType(field);
+                    if (!_.isNil(type)) {
+                        if (!_.isNil(type.resolveFunc))
+                            type.resolveFunc(this.actionTree, field.args, this.context);
+                        else
+                            this.handleError(`*** Error on resolve function execution of type \"${type.type}\". ` +
+                                'This type has no resolve function.');
+                    }
+                    else {
+                        //TODO
+                        // Field's type is not in the list - most probably it is simple type (string, number, boolean)
+                        this.logger.log(`simple type ${field.outputTypeName}`);
+                    }
+                }
+            }
+            catch (err) {
+                this.handleError(`*** Error on resolve function execution of field \"${fullFieldPath}\". ${err}`);
+            }
+
+            this.executeActionTree(field.children);
+        }
+    }
+
+    private static composeFullFieldPath = (arrPath: Array<string>): string => {
+        let fullPath = '';
+        for (let i = 0; i < arrPath.length; i++) {
+            fullPath += arrPath[i];
+            if (i < arrPath.length - 1)
+                fullPath += GqlProvider.pathDelim;
+        }
+
+        return fullPath;
+    }
+
+    private findType = (field: any): any => {
+        for (let i = 0; i < this.types.length; i++)
+            if (this.types[i].type === field.outputTypeName)
+                return this.types[i];
+
+        return null;
     }
 }
