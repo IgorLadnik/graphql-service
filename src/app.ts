@@ -105,7 +105,7 @@ query {
       author {
       	name
       }
-      content
+      text
     }
   }
 }

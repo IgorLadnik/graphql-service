@@ -11,7 +11,14 @@ export interface ResolveFieldsMap {
 
 export type Field = { fullFieldPath: string, type: any, resolveFunc: ResolveFunction };
 export type ResolveFunction = (actionTree: any, args: any) => void;
-export type FieldDescription = { fieldName: string, arrPath: Array<string>, outputTypeName: string, isArray: boolean, args: any, children: Array<FieldDescription> };
+export type FieldDescription = {
+    fieldName: string,
+    arrPath: Array<string>,
+    outputTypeName: string,
+    isArray: boolean,
+    args: any,
+    children: Array<FieldDescription>,
+};
 
 export class GqlProvider {
     private static readonly pathDelim = '.';
@@ -20,6 +27,7 @@ export class GqlProvider {
 
     private resolveFields: ResolveFieldsMap = { };
     private actionTree: any;
+    private errors: Array<string>;
 
     // for recursion
     private arrPath: Array<string>;
@@ -50,23 +58,29 @@ export class GqlProvider {
 
     executeFn = (obj: any): string => {
         this.logger.log('--------------------------------------------------');
+        this.errors = new Array<string>();
         this.actionTree = new Array<any>();
 
         try {
             this.parse(obj);
         }
         catch (err) {
-            this.logger.log(`*** Error on executeFn: ${err}`);
+            this.handleError(`*** Error on executeFn: ${err}`);
         }
 
-        //TODO
-        // Actual data processing should be added here according to this.actionTree
+        let output = '';
+        if (this.errors.length === 0) {
+            //TODO
+            // Actual data processing should be added here according to this.actionTree
 
-        let result = GqlProvider.createOutput(this.actionTree);
+            output = GqlProvider.createOutput(this.actionTree);
+            this.logger.log(GqlProvider.jsonStringifyFormatted(output));
+        }
+        else
+            this.errors.forEach((error: string) => output += error);
 
-        this.logger.log(GqlProvider.jsonStringifyFormatted(result));
         this.logger.log('--------------------------------------------------');
-        return result;
+        return output;
     }
 
     // Recursive
@@ -87,18 +101,22 @@ export class GqlProvider {
             this.args = GqlProvider.extractArguments(selection);
             this.field = this.resolveFields[fieldFullPath];
 
+            if (_.isNil(this.field)) {
+                let o = 0;
+            }
+
             try {
                 if (prevPath.length == 0) {
                     if (!_.isNil(this.field?.type))
                         this.setUpmostFieldType(fieldName);
                     else
-                        this.logger.log(`*** Error on set upmost field type for field \"${fieldName}\". ` +
+                        this.handleError(`*** Error on set upmost field type for field \"${fieldName}\". ` +
                                              'Type name is not provided.');
                 }
                 else
                     this.setGeneralFieldType(fieldFullPath);
             } catch (err) {
-                this.logger.log(`*** Error on set field type for field \"${fieldName}\". ${err}`);
+                this.handleError(`*** Error on set field type for field \"${fieldName}\". ${err}`);
                 return;
             }
 
@@ -127,6 +145,9 @@ export class GqlProvider {
                 const type = _.isNil(obj.type) ? typeof obj : obj.type;
                 this.pushToActionTree(parent.children, fieldName, this.arrPath, type, isArray);
             }
+            else
+                this.handleError(`*** Error on set field type for field \"${fieldName}\". ` +
+                                `No such field in its parent output type \"${parent.outputTypeName}\".`);
         }
     }
 
@@ -222,5 +243,10 @@ export class GqlProvider {
         const prefix = prevPath.length > 0 ? `${prevPath}${GqlProvider.pathDelim}` : '';
         let temp = `${prefix}${fieldName}`;
         return temp.substr(0, temp.length);
+    }
+
+    private handleError = (errorMessage: string) => {
+        this.logger.log(errorMessage);
+        this.errors.push(errorMessage);
     }
 }
