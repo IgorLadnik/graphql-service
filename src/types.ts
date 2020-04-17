@@ -6,6 +6,7 @@ export const User = {
     email: '',
     role: '',
     resolveFunc: (actionTree: any, args: any, context: any) => {
+        context['User'] = 'a';
         console.log('resolveFunc for User');
     }
 };

@@ -50,6 +50,7 @@ import { User, ChatMessage, Chat, Role } from "./types";
                 fullFieldPath: 'user',
                 type: User,
                 resolveFunc: (actionTree, args, context) => {
+                    context['user'] = 'a';
                     console.log('topmost resolveFunc for user');
                 }
             },
@@ -57,6 +58,7 @@ import { User, ChatMessage, Chat, Role } from "./types";
                 fullFieldPath: 'myChats',
                 type: Chat,
                 resolveFunc: (actionTree, args, context) => {
+                    context['myChats'] = 'a';
                     console.log('topmost resolveFunc for myChats');
                 }
             },
@@ -65,6 +67,7 @@ import { User, ChatMessage, Chat, Role } from "./types";
                 fullFieldPath: 'myChats.messages.author.name',
                 type: String,
                 resolveFunc: (actionTree, args, context) => {
+                    context['myChats.messages.author.name'] = 'a';
                     console.log('resolveFunc for myChats.messages.author.name');
                 }
             }
