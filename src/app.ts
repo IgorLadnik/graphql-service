@@ -44,8 +44,8 @@ import { User, ChatMessage, Chat, Role } from "./types";
     // Settings for gqlProvider.
     // Placed after start listening for test purposes.
     gqlProvider
-        .setTypes(User, ChatMessage, Chat)
-        .setResolvedFields(
+        .registerTypes(User, ChatMessage, Chat)
+        .registerResolvedFields(
             {
                 fullFieldPath: 'user',
                 type: User,
@@ -101,7 +101,7 @@ import { User, ChatMessage, Chat, Role } from "./types";
 
 query {
   user(id: 1) {
-	name
+    name
     id
   }
 }

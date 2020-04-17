@@ -18,7 +18,7 @@ export type ResolveFunction = (actionTree: any, args: any, context: any) => void
 export type FieldDescription = {
     fieldName: string,
     arrPath: Array<string>,
-    outputTypeName: string,
+    typeName: string,
     isArray: boolean,
     args: any,
     children: Array<FieldDescription>,
@@ -142,7 +142,7 @@ export class GqlProvider {
             parent = this.getParent(this.actionTree[i]);
 
         if (!_.isNil(parent)) {
-            const field = _.filter(this.types, t => t.type === parent.outputTypeName)[0][fieldName];
+            const field = _.filter(this.types, t => t.type === parent.typeName)[0][fieldName];
             if (!_.isNil(field)) {
                 const isArray = _.isArray(field);
                 const obj = isArray ? field[0] : field;
@@ -151,15 +151,15 @@ export class GqlProvider {
             }
             else
                 this.handleError(`*** Error on set field type for field \"${fieldName}\". ` +
-                                `No such field in its parent output type \"${parent.outputTypeName}\".`);
+                                `No such field in its parent output type \"${parent.typeName}\".`);
         }
     }
 
-    private pushToActionTree = (tree: any, fieldName: string, arrPath: Array<string>, outputTypeName: string, isArray: boolean) =>
+    private pushToActionTree = (tree: any, fieldName: string, arrPath: Array<string>, typeName: string, isArray: boolean) =>
         tree.push({
             fieldName,
             arrPath,
-            outputTypeName,
+            typeName,
             isArray,
             args: this.args,
             children: new Array<FieldDescription>()
@@ -213,12 +213,12 @@ export class GqlProvider {
         return resolveArgs;
     }
 
-    setTypes = (...arrArgs: Array<any>): GqlProvider => {
+    registerTypes = (...arrArgs: Array<any>): GqlProvider => {
         arrArgs?.forEach((args: any) => this.types.push(args));
         return this;
     }
 
-    setResolvedFields = (...arrArgs: Array<Field>): GqlProvider => {
+    registerResolvedFields = (...arrArgs: Array<Field>): GqlProvider => {
         arrArgs?.forEach((field: any) => this.resolvedFields[field.fullFieldPath] = field);
         return this;
     }
@@ -265,18 +265,23 @@ export class GqlProvider {
                 if (!_.isNil(resolvedField))
                     resolvedField.resolveFunc(this.actionTree, field.args, this.context);
                 else {
-                    const type = this.findType(field);
+                    const type = this.findType(field.typeName);
                     if (!_.isNil(type)) {
                         if (!_.isNil(type.resolveFunc))
                             type.resolveFunc(this.actionTree, field.args, this.context);
                         else
                             this.handleError(`*** Error on resolve function execution of type \"${type.type}\". ` +
-                                'This type has no resolve function.');
+                                `Type \"${type.type}\" has no resolve function.`);
                     }
                     else {
-                        //TODO
-                        // Field's type is not in the list - most probably it is simple type (string, number, boolean)
-                        this.logger.log(`simple type ${field.outputTypeName}`);
+                        if (GqlProvider.isSimpleType(field.typeName)) {
+                            //TODO
+                            // Field's type is not in the list - most probably it is simple type (string, number, boolean)
+                            this.logger.log(`simple type ${field.typeName}`);
+                        }
+                        else
+                            this.handleError(`*** Error on resolve function execution of type \"${field.typeName}\". ` +
+                                `Type \"${field.typeName}\" is not registered.`);
                     }
                 }
             }
@@ -299,11 +304,14 @@ export class GqlProvider {
         return fullPath;
     }
 
-    private findType = (field: any): any => {
+    private findType = (typeName: string): any => {
         for (let i = 0; i < this.types.length; i++)
-            if (this.types[i].type === field.outputTypeName)
+            if (this.types[i].type === typeName)
                 return this.types[i];
 
         return null;
     }
+
+    private static isSimpleType = (typeName: string): boolean =>
+        ['string', 'number', 'boolean'].includes(typeName);
 }
