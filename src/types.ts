@@ -1,14 +1,22 @@
 
+function resolve(contextVar: any, typeName: string) {
+    const strData = `${typeName}_data`;
+    const strProperties = `${typeName}_properties`;
+    let inItem = contextVar[strData];
+    const outItem: any = { };
+    contextVar[strProperties].forEach((p: string) => outItem[p] = inItem[p]);
+    contextVar[strData] = outItem;
+    console.log('resolve() for type ${typeName}');
+}
+
 export const User = {
     type: 'User',
     id: 0,
     name: '',
     email: '',
     role: '',
-    resolveFunc: (actionTree: any, args: any, context: any) => {
-        context['User'] = 'a';
-        console.log('resolveFunc for User');
-    }
+    resolveFunc: (actionTree: any, args: any, contextConst: any, contextVar: any) =>
+        resolve(contextVar, 'User')
 };
 
 export const ChatMessage = {
@@ -17,9 +25,8 @@ export const ChatMessage = {
     text: '',
     time: '',
     author: User,
-    resolveFunc: (actionTree: any, args: any, context: any) => {
-        console.log('resolveFunc for ChatMessage');
-    }
+    resolveFunc: (actionTree: any, args: any, contextConst: any, contextVar: any) =>
+        resolve(contextVar, 'ChatMessage')
 };
 
 export const Chat = {
@@ -28,9 +35,8 @@ export const Chat = {
     topic: '',
     participants: [User],
     messages: [ChatMessage],
-    resolveFunc: (actionTree: any, args: any, context: any) => {
-        console.log('resolveFunc for Chat');
-    }
+    resolveFunc: (actionTree: any, args: any, contextConst: any, contextVar: any) =>
+        resolve(contextVar, 'Chat')
 };
 
 export const Role = {

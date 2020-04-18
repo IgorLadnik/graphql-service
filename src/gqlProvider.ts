@@ -14,7 +14,7 @@ export interface ContextMap {
 }
 
 export type Field = { fullFieldPath: string, type: any, resolveFunc: ResolveFunction };
-export type ResolveFunction = (actionTree: any, args: any, context: any) => void;
+export type ResolveFunction = (actionTree: any, args: any, contextConst: any, contextVar: any) => void;
 export type FieldDescription = {
     fieldName: string,
     arrPath: Array<string>,
@@ -28,6 +28,8 @@ export class GqlProvider {
     private static readonly pathDelim = '.';
 
     readonly schema: any;
+    contextConst: ContextMap = { };
+    contextVar: ContextMap;
 
     private resolvedFields: ResolvedFieldsMap = { };
     private actionTree: any;
@@ -38,7 +40,6 @@ export class GqlProvider {
     private args: any;
     private field: Field;
     private readonly types = Array<any>();
-    private context: ContextMap;
 
     constructor(private logger: ILogger) {
         const config = new GraphQLObjectType({ name: 'Query' }).toConfig();
@@ -61,37 +62,65 @@ export class GqlProvider {
 
     formatErrorFn = (error: GraphQLError) => this.logger.log(`*** Error: ${error}`);
 
-    executeFn = (obj: any): string => {
+    executeFn = async (inboundObj: any): Promise<string> => {
         this.logger.log('--------------------------------------------------');
+
+        // Initialize appropriate variables for new query
         this.errors = new Array<string>();
         this.actionTree = new Array<any>();
-        this.context = { };
+        this.contextVar = { };
 
+        // Parsing inbound query to obtain "this.actionTree"
         try {
-            this.parse(obj);
+            this.parse(inboundObj);
         }
         catch (err) {
             this.handleError(`*** Error on executeFn: ${err}`);
         }
 
-        let output = '';
-        if (this.errors.length === 0) {
-            output = GqlProvider.createOutput(this.actionTree);
-            this.logger.log(GqlProvider.jsonStringifyFormatted(output));
+        const results = new Array<any>();
+        if (this.isErrorsFree) {
+            const strActionTree = GqlProvider.createOutput(this.actionTree);
+            this.logger.log(GqlProvider.jsonStringifyFormatted(strActionTree));
             this.logger.log('--------------------------------------------------');
 
-            //TODO
-            // Actual data processing should be added here according to this.actionTree
-            this.executeActionTree(this.actionTree);
+            // Actual data processing according to this.actionTree
+            try {
+                await this.executeActionTree(this.actionTree);
+            }
+            catch (err) {
+                this.handleError(`*** Error on executeActionTree: ${err}`);
+            }
+
+            if (this.isErrorsFree)
+                this.actionTree.forEach((item: any) => results.push(this.contextVar[item.fieldName]));
         }
-        else
-            this.errors.forEach((error: string) => output += error);
+
+        // Output results
+        let output: any = '';
+        if (this.isErrorsFree)
+            output = GqlProvider.createOutput(results);
+        else {
+            let strErrors = '';
+            this.errors.forEach((error: string) => strErrors += error);
+            output = strErrors;
+        }
 
         this.logger.log('--------------------------------------------------');
         return output;
     }
 
-    // Recursive
+    registerTypes = (...arrArgs: Array<any>): GqlProvider => {
+        arrArgs?.forEach((args: any) => this.types.push(args));
+        return this;
+    }
+
+    registerResolvedFields = (...arrArgs: Array<Field>): GqlProvider => {
+        arrArgs?.forEach((field: any) => this.resolvedFields[field.fullFieldPath] = field);
+        return this;
+    }
+
+    // Recursive parsing
     private parse = (currentSelection: any, prevPath: string = '') => {
         let selectionSet = currentSelection?.selectionSet;
         if (!selectionSet)
@@ -213,16 +242,6 @@ export class GqlProvider {
         return resolveArgs;
     }
 
-    registerTypes = (...arrArgs: Array<any>): GqlProvider => {
-        arrArgs?.forEach((args: any) => this.types.push(args));
-        return this;
-    }
-
-    registerResolvedFields = (...arrArgs: Array<Field>): GqlProvider => {
-        arrArgs?.forEach((field: any) => this.resolvedFields[field.fullFieldPath] = field);
-        return this;
-    }
-
     private static check = (checkData: any): boolean => {
         if (checkData.fieldName === '__schema')
             return false;
@@ -255,7 +274,7 @@ export class GqlProvider {
     }
 
     // Recursive
-    private executeActionTree = (arrField: Array<any>) => {
+    private executeActionTree = async (arrField: Array<any>) => {
         for (let i = 0; i < arrField.length; i++) {
             let field = arrField[i];
             let fullFieldPath = GqlProvider.composeFullFieldPath(field.arrPath);
@@ -263,12 +282,12 @@ export class GqlProvider {
             const resolvedField = this.resolvedFields[fullFieldPath];
             try {
                 if (!_.isNil(resolvedField))
-                    resolvedField.resolveFunc(this.actionTree, field.args, this.context);
+                    await resolvedField.resolveFunc(this.actionTree, field.args, this.contextConst, this.contextVar);
                 else {
                     const type = this.findType(field.typeName);
                     if (!_.isNil(type)) {
                         if (!_.isNil(type.resolveFunc))
-                            type.resolveFunc(this.actionTree, field.args, this.context);
+                            await type.resolveFunc(this.actionTree, field.args, this.contextConst, this.contextVar);
                         else
                             this.handleError(`*** Error on resolve function execution of type \"${type.type}\". ` +
                                 `Type \"${type.type}\" has no resolve function.`);
@@ -289,7 +308,7 @@ export class GqlProvider {
                 this.handleError(`*** Error on resolve function execution of field \"${fullFieldPath}\". ${err}`);
             }
 
-            this.executeActionTree(field.children);
+            await this.executeActionTree(field.children);
         }
     }
 
@@ -314,4 +333,6 @@ export class GqlProvider {
 
     private static isSimpleType = (typeName: string): boolean =>
         ['string', 'number', 'boolean'].includes(typeName);
+
+    isErrorsFree: boolean = _.isNil(this.errors) || this.errors.length === 0;
 }
