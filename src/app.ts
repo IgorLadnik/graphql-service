@@ -79,7 +79,7 @@ export const typesCommon = new TypesCommon(logger);
                 type: User,
                 resolveFunc: async (field, args, contextConst, contextVar) => {
                     const query =
-                        'SELECT * FROM Users WHERE id in (SELECT userId FROM Participants WHERE chatId = ${parent.id})';
+                        'SELECT name FROM Users WHERE id in (SELECT userId FROM Participants WHERE chatId = ${parent.id})';
                     contextVar['User_properties'] = ['name'];
                     await typesCommon.resolveFunc1(gqlProvider, field, query, args, contextConst, contextVar);
                 }
