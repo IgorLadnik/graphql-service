@@ -97,7 +97,7 @@ export class GqlProvider implements IGqlProvider {
             }
 
             if (this.isErrorsFree)
-                this.actionTree.forEach((item: any) => results.push(this.contextVar[item.fieldName]));
+                this.actionTree.forEach((item: any) => results.push(this.contextVar[`${item.fieldName}-0`]));
         }
 
         // Output results

@@ -79,7 +79,8 @@ export const typesCommon = new TypesCommon(logger);
                 type: User,
                 resolveFunc: async (field, args, contextConst, contextVar) => {
                     const query =
-                        'SELECT name FROM Users WHERE id in (SELECT userId FROM Participants WHERE chatId = ${parent.id})';
+                        'SELECT name FROM Users WHERE id in' +
+                            '(SELECT userId FROM Participants WHERE chatId = ${parent.id})';
                     contextVar['User_properties'] = ['name'];
                     await typesCommon.resolveFunc1(gqlProvider, field, query, args, contextConst, contextVar);
                 }
@@ -98,27 +99,11 @@ export const typesCommon = new TypesCommon(logger);
                 type: User,
                 resolveFunc: async (field, args, contextConst, contextVar) => {
                     console.log('resolveFunc for myChats.messages.author');
-                    const sql = gqlProvider.contextConst['sql'];
-                    const grandParents = gqlProvider.contextVar['myChats'];
+                    const grandParents = gqlProvider.contextVar['myChats-0'];
                     contextVar['User_properties'] = ['name'];
-                    for (let  k = 0; k < grandParents.length; k++) {
-                        const parents = grandParents[k].messages;
-                        for (let  i = 0; i < parents.length; i++) {
-                            const parent = parents[i];
-                            const rs = await sql.query(`                                                                                                   
-                                SELECT id, name FROM Users WHERE id = ${parent.authorId}               
-                            `);
-
-                            delete parent.authorId;
-
-                            rs.forEach((item: any) => {
-                                contextVar['User_data'] = item;
-                                User.resolveFunc(field, args, contextConst, contextVar);
-                                const result = contextVar['User_data'];
-                                parent['author'] = result;
-                            });
-                        }
-                    }
+                    const query = 'SELECT name FROM Users WHERE id = ${parent.authorId}';
+                    for (let  k = 0; k < grandParents.length; k++)
+                        await typesCommon.resolveFunc1(gqlProvider, field, query, args, contextConst, contextVar);
                 }
             }
             //-----------------------------------------------------------------------
