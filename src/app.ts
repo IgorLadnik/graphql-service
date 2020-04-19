@@ -56,10 +56,9 @@ export const typesCommon = new TypesCommon(logger);
     {
                 fullFieldPath: 'user',
                 type: User,
-                resolveFunc: async (actionTree, args, contextConst, contextVar) => {
-                    const fullFieldPath = 'user';
+                resolveFunc: async (field, args, contextConst, contextVar) => {
                     const query = `SELECT id, name, email FROM Users WHERE id = ${args.id}`;
-                    await typesCommon.resolveFunc0(fullFieldPath, query, contextConst, contextVar);
+                    await typesCommon.resolveFunc0(field, query, contextConst, contextVar);
                 }
             },
 
@@ -67,44 +66,37 @@ export const typesCommon = new TypesCommon(logger);
             {
                 fullFieldPath: 'myChats',
                 type: Chat,
-                resolveFunc: async (actionTree, args, contextConst, contextVar) => {
-                    const fullFieldPath = 'myChats';
+                resolveFunc: async (field, args, contextConst, contextVar) => {
                     const query = `
                         SELECT id, topic FROM Chats WHERE id in
                             (SELECT chatId FROM Participants WHERE userId in
                                 (SELECT id FROM Users WHERE name = 'Rachel'))`;
-                    await typesCommon.resolveFunc0(fullFieldPath, query, contextConst, contextVar);
+                    await typesCommon.resolveFunc0(field, query, contextConst, contextVar);
                 }
             },
             {
                 fullFieldPath: 'myChats.participants',
                 type: User,
-                resolveFunc: async (actionTree, args, contextConst, contextVar) => {
-                    const fullFieldPath = 'myChats.participants';
-                    const type = User;
+                resolveFunc: async (field, args, contextConst, contextVar) => {
                     const query =
                         'SELECT * FROM Users WHERE id in (SELECT userId FROM Participants WHERE chatId = ${parent.id})';
                     contextVar['User_properties'] = ['name'];
-                    await typesCommon.resolveFunc1(fullFieldPath, type, query,
-                                                   actionTree, args, contextConst, contextVar);
+                    await typesCommon.resolveFunc1(gqlProvider, field, query, args, contextConst, contextVar);
                 }
             },
             {
                 fullFieldPath: 'myChats.messages',
                 type: ChatMessage,
-                resolveFunc: async (actionTree, args, contextConst, contextVar) => {
-                    const fullFieldPath = 'myChats.messages';
-                    const type = ChatMessage;
+                resolveFunc: async (field, args, contextConst, contextVar) => {
                     const query = 'SELECT id, text, authorId FROM ChatMessages WHERE chatId = ${parent.id}';
                     contextVar['ChatMessage_properties'] = ['text', 'authorId'];
-                    await typesCommon.resolveFunc1(fullFieldPath, type, query,
-                        actionTree, args, contextConst, contextVar);
+                    await typesCommon.resolveFunc1(gqlProvider, field, query, args, contextConst, contextVar);
                 }
             },
             {
                 fullFieldPath: 'myChats.messages.author',
                 type: User,
-                resolveFunc: async (actionTree, args, contextConst, contextVar) => {
+                resolveFunc: async (field, args, contextConst, contextVar) => {
                     console.log('resolveFunc for myChats.messages.author');
                     const sql = gqlProvider.contextConst['sql'];
                     const grandParents = gqlProvider.contextVar['myChats'];
@@ -121,7 +113,7 @@ export const typesCommon = new TypesCommon(logger);
 
                             rs.forEach((item: any) => {
                                 contextVar['User_data'] = item;
-                                User.resolveFunc(actionTree, args, contextConst, contextVar);
+                                User.resolveFunc(field, args, contextConst, contextVar);
                                 const result = contextVar['User_data'];
                                 parent['author'] = result;
                             });

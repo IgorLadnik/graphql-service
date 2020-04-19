@@ -14,7 +14,7 @@ export interface ContextMap {
 }
 
 export type Field = { fullFieldPath: string, type: any, resolveFunc: ResolveFunction };
-export type ResolveFunction = (actionTree: any, args: any, contextConst: any, contextVar: any) => void;
+export type ResolveFunction = (field: any, args: any, contextConst: any, contextVar: any) => void;
 export type FieldDescription = {
     fieldName: string,
     arrPath: Array<string>,
@@ -24,7 +24,11 @@ export type FieldDescription = {
     children: Array<FieldDescription>,
 };
 
-export class GqlProvider {
+export interface IGqlProvider {
+    findRegisteredType(typeName: string): any;
+}
+
+export class GqlProvider implements IGqlProvider {
     private static readonly pathDelim = '.';
 
     readonly schema: any;
@@ -282,9 +286,9 @@ export class GqlProvider {
             const resolvedField = this.resolvedFields[fullFieldPath];
             try {
                 if (!_.isNil(resolvedField))
-                    await resolvedField.resolveFunc(this.actionTree, field.args, this.contextConst, this.contextVar);
+                    await resolvedField.resolveFunc(field, field.args, this.contextConst, this.contextVar);
                 else {
-                    const type = this.findType(field.typeName);
+                    const type = this.findRegisteredType(field.typeName);
                     if (!_.isNil(type)) {
                         if (!_.isNil(type.resolveFunc))
                             await type.resolveFunc(this.actionTree, field.args, this.contextConst, this.contextVar);
@@ -312,18 +316,10 @@ export class GqlProvider {
         }
     }
 
-    private static composeFullFieldPath = (arrPath: Array<string>): string => {
-        let fullPath = '';
-        for (let i = 0; i < arrPath.length; i++) {
-            fullPath += arrPath[i];
-            if (i < arrPath.length - 1)
-                fullPath += GqlProvider.pathDelim;
-        }
+    static composeFullFieldPath = (arrPath: Array<string>): string =>
+        arrPath.reduce((a, c) => a + `${GqlProvider.pathDelim}${c}`)
 
-        return fullPath;
-    }
-
-    private findType = (typeName: string): any => {
+    findRegisteredType = (typeName: string): any => {
         for (let i = 0; i < this.types.length; i++)
             if (this.types[i].type === typeName)
                 return this.types[i];

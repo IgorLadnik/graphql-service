@@ -6,7 +6,7 @@ export const User = {
     name: '',
     email: '',
     role: '',
-    resolveFunc: (actionTree: any, args: any, contextConst: any, contextVar: any) =>
+    resolveFunc: (field: any, args: any, contextConst: any, contextVar: any) =>
         typesCommon.filter('User', contextVar)
 };
 
@@ -16,7 +16,7 @@ export const ChatMessage = {
     text: '',
     time: '',
     author: User,
-    resolveFunc: (actionTree: any, args: any, contextConst: any, contextVar: any) =>
+    resolveFunc: (field: any, args: any, contextConst: any, contextVar: any) =>
         typesCommon.filter('ChatMessage', contextVar)
 };
 
@@ -26,7 +26,7 @@ export const Chat = {
     topic: '',
     participants: [User],
     messages: [ChatMessage],
-    resolveFunc: (actionTree: any, args: any, contextConst: any, contextVar: any) =>
+    resolveFunc: (field: any, args: any, contextConst: any, contextVar: any) =>
         typesCommon.filter('Chat', contextVar)
 };
 
