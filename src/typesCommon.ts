@@ -23,9 +23,6 @@ export class TypesCommon {
         this.logger.log(`common resolveFunc for ${fullFieldPath}`);
         const sql = contextConst['sql'];
         const parents = contextVar[field.arrPath[0]];
-
-        //contextVar[`${type.type}_properties`] = field.children.map((c: any) => c.fieldName);
-
         for (let  i = 0; i < parents.length; i++) {
             const parent = parents[i];
             const rs = await sql.query(query.replace('${parent.id}', `${parent.id}`));
