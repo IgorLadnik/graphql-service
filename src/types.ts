@@ -1,13 +1,4 @@
-
-function resolve(contextVar: any, typeName: string) {
-    const strData = `${typeName}_data`;
-    const strProperties = `${typeName}_properties`;
-    let inItem = contextVar[strData];
-    const outItem: any = { };
-    contextVar[strProperties].forEach((p: string) => outItem[p] = inItem[p]);
-    contextVar[strData] = outItem;
-    console.log('resolve() for type ${typeName}');
-}
+import { typesCommon } from './app';
 
 export const User = {
     type: 'User',
@@ -16,7 +7,7 @@ export const User = {
     email: '',
     role: '',
     resolveFunc: (actionTree: any, args: any, contextConst: any, contextVar: any) =>
-        resolve(contextVar, 'User')
+        typesCommon.filter('User', contextVar)
 };
 
 export const ChatMessage = {
@@ -26,7 +17,7 @@ export const ChatMessage = {
     time: '',
     author: User,
     resolveFunc: (actionTree: any, args: any, contextConst: any, contextVar: any) =>
-        resolve(contextVar, 'ChatMessage')
+        typesCommon.filter('ChatMessage', contextVar)
 };
 
 export const Chat = {
@@ -36,7 +27,7 @@ export const Chat = {
     participants: [User],
     messages: [ChatMessage],
     resolveFunc: (actionTree: any, args: any, contextConst: any, contextVar: any) =>
-        resolve(contextVar, 'Chat')
+        typesCommon.filter('Chat', contextVar)
 };
 
 export const Role = {

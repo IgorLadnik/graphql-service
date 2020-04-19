@@ -4,14 +4,16 @@ import cors from 'cors';
 import _ from 'lodash';
 import graphqlHTTP from 'express-graphql';
 import { GqlProvider, FieldDescription } from './gqlProvider';
-import { ExecutionArgs, GraphQLError } from "graphql";
-import { ILogger, Logger } from "./logger";
-import { User, ChatMessage, Chat, Role } from "./types";
+import { ExecutionArgs, GraphQLError } from 'graphql';
+import { ILogger, Logger } from './logger';
+import { User, ChatMessage, Chat, Role } from './types';
 import { SqlServerProvider } from './sqlServerProvider';
+import {TypesCommon} from './typesCommon';
+
+export const logger = new Logger();
+export const typesCommon = new TypesCommon(logger);
 
 (async function main() {
-    const logger = new Logger();
-
     const app = express();
 
     app.use('*', cors());
