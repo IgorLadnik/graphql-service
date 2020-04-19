@@ -57,8 +57,9 @@ export const typesCommon = new TypesCommon(logger);
                 fullFieldPath: 'user',
                 type: User,
                 resolveFunc: async (actionTree, args, contextConst, contextVar) => {
+                    const fullFieldPath = 'user';
                     const query = `SELECT id, name, email FROM Users WHERE id = ${args.id}`;
-                    await typesCommon.resolveFunc0('user', query, contextConst, contextVar);
+                    await typesCommon.resolveFunc0(fullFieldPath, query, contextConst, contextVar);
                 }
             },
 
@@ -67,59 +68,37 @@ export const typesCommon = new TypesCommon(logger);
                 fullFieldPath: 'myChats',
                 type: Chat,
                 resolveFunc: async (actionTree, args, contextConst, contextVar) => {
+                    const fullFieldPath = 'myChats';
                     const query = `
                         SELECT id, topic FROM Chats WHERE id in
                             (SELECT chatId FROM Participants WHERE userId in
                                 (SELECT id FROM Users WHERE name = 'Rachel'))`;
-                    await typesCommon.resolveFunc0('myChats', query, contextConst, contextVar);
+                    await typesCommon.resolveFunc0(fullFieldPath, query, contextConst, contextVar);
                 }
             },
             {
                 fullFieldPath: 'myChats.participants',
                 type: User,
                 resolveFunc: async (actionTree, args, contextConst, contextVar) => {
-                    logger.log('resolveFunc for myChats.participants');
-                    const sql = gqlProvider.contextConst['sql'];
-                    const parents = gqlProvider.contextVar['myChats'];
+                    const fullFieldPath = 'myChats.participants';
+                    const type = User;
+                    const query =
+                        'SELECT * FROM Users WHERE id in (SELECT userId FROM Participants WHERE chatId = ${parent.id})';
                     contextVar['User_properties'] = ['name'];
-                    for (let  i = 0; i < parents.length; i++) {
-                        const parent = parents[i];
-                        const rs = await sql.query(`
-                                        SELECT * FROM Users WHERE id in 
-                                            (SELECT userId FROM Participants WHERE chatId = ${parent.id})
-                        `);
-
-                        parent['participants'] = new Array<any>();
-                        rs.forEach((item: any) => {
-                            contextVar['User_data'] = item;
-                            User.resolveFunc(actionTree, args, contextConst, contextVar);
-                            parent['participants'].push(contextVar['User_data']);
-                        });
-                    }
+                    await typesCommon.resolveFunc1(fullFieldPath, type, query,
+                                                   actionTree, args, contextConst, contextVar);
                 }
             },
             {
                 fullFieldPath: 'myChats.messages',
                 type: ChatMessage,
                 resolveFunc: async (actionTree, args, contextConst, contextVar) => {
-                    logger.log('resolveFunc for myChats.messages');
-                    const sql = gqlProvider.contextConst['sql'];
-                    const parents = gqlProvider.contextVar['myChats'];
+                    const fullFieldPath = 'myChats.messages';
+                    const type = ChatMessage;
+                    const query = 'SELECT id, text, authorId FROM ChatMessages WHERE chatId = ${parent.id}';
                     contextVar['ChatMessage_properties'] = ['text', 'authorId'];
-                    for (let  i = 0; i < parents.length; i++) {
-                        const parent = parents[i];
-                        const rs = await sql.query(`                                                                                                   
-                                 SELECT id, text, authorId FROM ChatMessages WHERE chatId = ${parent.id}               
-                            `);
-
-                        parent['messages'] = new Array<any>();
-                        rs.forEach((item: any) => {
-                            contextVar['ChatMessage_data'] = item;
-                            ChatMessage.resolveFunc(actionTree, args, contextConst, contextVar);
-                            const result = contextVar['ChatMessage_data'];
-                            parent['messages'].push(result);
-                        });
-                    }
+                    await typesCommon.resolveFunc1(fullFieldPath, type, query,
+                        actionTree, args, contextConst, contextVar);
                 }
             },
             {

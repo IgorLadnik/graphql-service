@@ -134,9 +134,9 @@ export class GqlProvider {
             if (!GqlProvider.check({fieldName}))
                 return;
 
-            const fieldFullPath = GqlProvider.getFullFieldPath(prevPath, fieldName);
+            const fullFieldPath = GqlProvider.getFullFieldPath(prevPath, fieldName);
             this.args = GqlProvider.extractArguments(selection);
-            this.field = this.resolvedFields[fieldFullPath];
+            this.field = this.resolvedFields[fullFieldPath];
 
             try {
                 if (prevPath.length == 0) {
@@ -147,24 +147,24 @@ export class GqlProvider {
                                              'Type name is not provided.');
                 }
                 else
-                    this.setGeneralFieldType(fieldFullPath);
+                    this.setGeneralFieldType(fullFieldPath);
             } catch (err) {
                 this.handleError(`*** Error on set field type for field \"${fieldName}\". ${err}`);
                 return;
             }
 
-            this.parse(selection, fieldFullPath);
+            this.parse(selection, fullFieldPath);
         });
     }
 
     private setUpmostFieldType = (fieldName: string) =>
         this.pushToActionTree(this.actionTree, fieldName, [fieldName], this.field.type.type, true)
 
-    private setGeneralFieldType = (fieldFullPath: string) => {
-        this.arrPath = fieldFullPath.split(GqlProvider.pathDelim);
+    private setGeneralFieldType = (fullFieldPath: string) => {
+        this.arrPath = fullFieldPath.split(GqlProvider.pathDelim);
 
-        const depth = this.arrPath.length - 1;
-        const fieldName = this.arrPath[depth];
+        const level = this.arrPath.length - 1;
+        const fieldName = this.arrPath[level];
 
         let parent: any;
         for (let i = 0; i < this.actionTree.length; i++)
