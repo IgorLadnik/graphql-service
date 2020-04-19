@@ -1,9 +1,9 @@
 const graphql = require('graphql');
 const { GraphQLObjectType, GraphQLSchema, GraphQLID } = graphql;
-import { DocumentNode, GraphQLError } from "graphql";
+import { DocumentNode, GraphQLError } from 'graphql';
 import _ from 'lodash';
-import { ILogger } from "./logger";
-import { ValidationRule } from "graphql/validation/ValidationContext";
+import { ILogger } from './logger';
+import { ValidationRule } from 'graphql/validation/ValidationContext';
 
 export interface ResolvedFieldsMap {
     [fullFieldPath: string]: Field;

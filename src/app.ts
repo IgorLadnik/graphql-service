@@ -57,16 +57,8 @@ export const typesCommon = new TypesCommon(logger);
                 fullFieldPath: 'user',
                 type: User,
                 resolveFunc: async (actionTree, args, contextConst, contextVar) => {
-                    console.log('topmost resolveFunc for user');
-                    const sql = gqlProvider.contextConst['sql'];
-                    contextVar['User_properties'] = ['id, name', 'email'];
-                    const rs = await sql.query(`
-                        SELECT id, name, email FROM Users WHERE id = ${args.id}
-                     `);
-
-                    const user = new Array<any>();
-                    rs.forEach((item: any) => user.push(item));
-                    gqlProvider.contextVar['user'] = user;
+                    const query = `SELECT id, name, email FROM Users WHERE id = ${args.id}`;
+                    await typesCommon.resolveFunc0('user', query, contextConst, contextVar);
                 }
             },
 
@@ -75,17 +67,11 @@ export const typesCommon = new TypesCommon(logger);
                 fullFieldPath: 'myChats',
                 type: Chat,
                 resolveFunc: async (actionTree, args, contextConst, contextVar) => {
-                    logger.log('topmost resolveFunc for myChats');
-                    const sql = gqlProvider.contextConst['sql'];
-                    const rs = await sql.query(`
+                    const query = `
                         SELECT id, topic FROM Chats WHERE id in
                             (SELECT chatId FROM Participants WHERE userId in
-                                (SELECT id FROM Users WHERE name = 'Rachel'))
-                     `);
-
-                    const myChats = new Array<any>();
-                    rs.forEach((item: any) => myChats.push(item));
-                    gqlProvider.contextVar['myChats'] = myChats;
+                                (SELECT id FROM Users WHERE name = 'Rachel'))`;
+                    await typesCommon.resolveFunc0('myChats', query, contextConst, contextVar);
                 }
             },
             {

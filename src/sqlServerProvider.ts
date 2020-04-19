@@ -1,5 +1,5 @@
 const sql = require('mssql/msnodesqlv8');
-import { ILogger } from "./logger";
+import { ILogger } from './logger';
 
 export class SqlServerProvider {
     constructor(private readonly config: any, private l: ILogger) {
