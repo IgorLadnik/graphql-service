@@ -14,7 +14,10 @@ export class TypesCommon {
         const rs = await sql.query(query);
         const results = new Array<any>();
         rs.forEach((item: any) => results.push(item));
-        contextVar[`${field.arrPath[0]}-0`] = results;
+        const parent: any = { };
+        const fieldName = field.arrPath[0];
+        parent[fieldName] = results;
+        contextVar[`${fieldName}-0`] = parent;
     }
 
     resolveFunc1 = async (gql: IGqlProvider, field: any, query: string,
@@ -26,8 +29,10 @@ export class TypesCommon {
         const level = field.arrPath.length - 1;
 
         let count = 0;
-        let parents: any;
-        while (!_.isNil(parents = contextVar[`${field.arrPath[level - 1]}-${count}`])) {
+        let parentsObj: any;
+        const fieldName = field.arrPath[level - 1];
+        while (!_.isNil(parentsObj = contextVar[`${fieldName}-${count}`])) {
+            let parents = parentsObj[fieldName];
             const levelFieldName = field.arrPath[level];
             for (let i = 0; i < parents.length; i++) {
                 const parent = parents[i];
@@ -37,12 +42,18 @@ export class TypesCommon {
                 parent[levelFieldName] = new Array<any>();
                 contextVar[levelFieldName] = new Array<any>();
                 rs.forEach((item: any) => {
-                    contextVar[`${type.type}_data`] = item;
+                    const dataName = `${type.type}_data`;
+                    contextVar[dataName] = item;
                     type.resolveFunc(field, args, contextConst, contextVar);
-                    parent[levelFieldName].push(contextVar[`${type.type}_data`]);
+                    const updatedItem = contextVar[dataName];
+                    if (field.isArray)
+                        parent[levelFieldName].push(updatedItem);
+                    else
+                        parent[levelFieldName] = updatedItem;
                 });
 
-                contextVar[`${levelFieldName}-${i}`] = parent[levelFieldName];
+                contextVar[`${levelFieldName}-${i}`] = { };
+                contextVar[`${levelFieldName}-${i}`][levelFieldName] = parent[levelFieldName];
             }
 
             count++;

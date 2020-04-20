@@ -79,9 +79,9 @@ export const typesCommon = new TypesCommon(logger);
                 type: User,
                 resolveFunc: async (field, args, contextConst, contextVar) => {
                     const query =
-                        'SELECT name FROM Users WHERE id in' +
+                        'SELECT * FROM Users WHERE id in' +
                             '(SELECT userId FROM Participants WHERE chatId = ${parent.id})';
-                    contextVar['User_properties'] = ['name'];
+                    contextVar['User_properties'] = ['name', 'email'];
                     await typesCommon.resolveFunc1(gqlProvider, field, query, args, contextConst, contextVar);
                 }
             },
@@ -99,9 +99,9 @@ export const typesCommon = new TypesCommon(logger);
                 type: User,
                 resolveFunc: async (field, args, contextConst, contextVar) => {
                     console.log('resolveFunc for myChats.messages.author');
-                    const grandParents = gqlProvider.contextVar['myChats-0'];
+                    const grandParents = gqlProvider.contextVar['myChats-0']['myChats'];
                     contextVar['User_properties'] = ['name'];
-                    const query = 'SELECT name FROM Users WHERE id = ${parent.authorId}';
+                    const query = 'SELECT * FROM Users WHERE id = ${parent.authorId}';
                     for (let  k = 0; k < grandParents.length; k++)
                         await typesCommon.resolveFunc1(gqlProvider, field, query, args, contextConst, contextVar);
                 }
