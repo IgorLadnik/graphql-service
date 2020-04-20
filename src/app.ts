@@ -118,7 +118,6 @@ async function connectToSql (logger: ILogger): Promise<any> {
         await sql.connect();
     }
     catch (err) {
-        logger.log(err);
         logger.log(`*** Error in connection to database {server: \"${server}\", database: ${database}. ${err}`);
         return false;
     }
