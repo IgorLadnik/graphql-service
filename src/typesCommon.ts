@@ -1,5 +1,5 @@
 import { ILogger } from './logger';
-import { IGqlProvider, GqlProvider } from './gqlProvider';
+import {IGqlProvider, GqlProvider, FieldDescription} from './gqlProvider';
 import _ from 'lodash';
 
 export class TypesCommon {
@@ -103,4 +103,7 @@ export class TypesCommon {
 
         return result;
     }
+
+    static updateFieldTypeFilter = (field: FieldDescription, contextVar: any) =>
+        contextVar[`${field.typeName}_properties`] = field.children.map((c: FieldDescription) => c.fieldName);
 }

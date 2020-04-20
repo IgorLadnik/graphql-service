@@ -58,7 +58,7 @@ export const typesCommon = new TypesCommon(logger);
                 type: User,
                 resolveFunc: async (field, args, contextConst, contextVar) => {
                     const query = `SELECT id, name, email FROM Users WHERE id = ${args.id}`;
-                    contextVar[`${field.typeName}_properties`] = field.children.map((c: FieldDescription) => c.fieldName);
+                    TypesCommon.updateFieldTypeFilter(field, contextVar);
                     await typesCommon.resolveFunc01(gqlProvider, field, query, args, contextConst, contextVar);
                 }
             },
@@ -72,7 +72,7 @@ export const typesCommon = new TypesCommon(logger);
                         SELECT * FROM Chats WHERE id in
                             (SELECT chatId FROM Participants WHERE userId in
                                 (SELECT id FROM Users WHERE name = 'Rachel'))`;
-                    contextVar[`${field.typeName}_properties`] = field.children.map((c: FieldDescription) => c.fieldName);
+                    TypesCommon.updateFieldTypeFilter(field, contextVar);
                     await typesCommon.resolveFunc01(gqlProvider, field, query, args, contextConst, contextVar);
                 }
             },
@@ -83,7 +83,8 @@ export const typesCommon = new TypesCommon(logger);
                     const query =
                         'SELECT * FROM Users WHERE id in' +
                             '(SELECT userId FROM Participants WHERE chatId = ${parent.id})';
-                    contextVar['User_properties'] = ['name', 'email'];
+                    //contextVar['User_properties'] = ['name', 'email'];
+                    TypesCommon.updateFieldTypeFilter(field, contextVar);
                     await typesCommon.resolveFunc01(gqlProvider, field, query, args, contextConst, contextVar);
                 }
             },
@@ -110,7 +111,7 @@ export const typesCommon = new TypesCommon(logger);
                     const grandParents = gqlProvider.contextVar[`${fieldName0}-0`][fieldName0];
                     contextVar[`${fieldName1}_properties`] = ['text', 'author'];
                     contextVar[`${fieldName1}_array`] = new Array<any>();
-                    contextVar[`${field.typeName}_properties`] = field.children.map((c: FieldDescription) => c.fieldName);
+                    TypesCommon.updateFieldTypeFilter(field, contextVar);
 
                     for (let  k = 0; k < grandParents.length; k++)
                         await typesCommon.resolveFunc01(gqlProvider, field, query, args, contextConst, contextVar);
