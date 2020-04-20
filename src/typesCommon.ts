@@ -6,7 +6,7 @@ export class TypesCommon {
     constructor(private logger: ILogger) { }
 
     resolveFunc01 = async (gql: IGqlProvider, field: any, query: string,
-                          args: any, contextConst: any, contextVar: any): Promise<void> => {
+                           args: any, contextConst: any, contextVar: any): Promise<void> => {
         const fullFieldPath = GqlProvider.composeFullFieldPath(field.arrPath);
         const type = gql.findRegisteredType(field.typeName);
         this.logger.log(`common resolveFunc for ${fullFieldPath}`);
@@ -101,6 +101,9 @@ export class TypesCommon {
 
         return result;
     }
+
+    static getQueryArgs = (field: FieldDescription): Array<string> =>
+        field.children.map((c: FieldDescription) => c.fieldName);
 
     static updateFieldTypeFilter = (field: FieldDescription, contextVar: any) =>
         contextVar[`${field.typeName}_properties`] = field.children.map((c: FieldDescription) => c.fieldName);

@@ -57,8 +57,9 @@ export const typesCommon = new TypesCommon(logger);
                 fullFieldPath: 'user',
                 type: User,
                 resolveFunc: async (field, args, contextConst, contextVar) => {
-                    const query = `SELECT id, name, email FROM Users WHERE id = ${args.id}`;
                     TypesCommon.updateFieldTypeFilter(field, contextVar);
+                    const queryArgs = TypesCommon.getQueryArgs(field);
+                    const query = `SELECT ${queryArgs} FROM Users WHERE id = ${args.id}`;
                     await typesCommon.resolveFunc01(gqlProvider, field, query, args, contextConst, contextVar);
                 }
             },
@@ -68,11 +69,10 @@ export const typesCommon = new TypesCommon(logger);
                 fullFieldPath: 'myChats',
                 type: Chat,
                 resolveFunc: async (field, args, contextConst, contextVar) => {
-                    const query = `
-                        SELECT * FROM Chats WHERE id in
-                            (SELECT chatId FROM Participants WHERE userId in
-                                (SELECT id FROM Users WHERE name = 'Rachel'))`;
-                    TypesCommon.updateFieldTypeFilter(field, contextVar);
+                    TypesCommon.updateFieldTypeFilter(field, contextVar); //?
+                    const query = `SELECT * FROM Chats WHERE id in
+                                     (SELECT chatId FROM Participants WHERE userId in
+                                        (SELECT id FROM Users WHERE name = 'Rachel'))`;
                     await typesCommon.resolveFunc01(gqlProvider, field, query, args, contextConst, contextVar);
                 }
             },
@@ -80,11 +80,11 @@ export const typesCommon = new TypesCommon(logger);
                 fullFieldPath: 'myChats.participants',
                 type: User,
                 resolveFunc: async (field, args, contextConst, contextVar) => {
-                    const query =
-                        'SELECT * FROM Users WHERE id in' +
-                            '(SELECT userId FROM Participants WHERE chatId = ${parent.id})';
-                    //contextVar['User_properties'] = ['name', 'email'];
                     TypesCommon.updateFieldTypeFilter(field, contextVar);
+                    const queryArgs = TypesCommon.getQueryArgs(field);
+                    const query =
+                        `SELECT ${queryArgs} FROM Users WHERE id in` +
+                            '(SELECT userId FROM Participants WHERE chatId = ${parent.id})';
                     await typesCommon.resolveFunc01(gqlProvider, field, query, args, contextConst, contextVar);
                 }
             },
@@ -106,12 +106,13 @@ export const typesCommon = new TypesCommon(logger);
                     const fieldName0 = field.arrPath[0];
                     const fieldName1 = field.arrPath[1];
 
-                    const query = 'SELECT * FROM Users WHERE id = ${parent.authorId}';
+                    TypesCommon.updateFieldTypeFilter(field, contextVar);
+                    const queryArgs = TypesCommon.getQueryArgs(field);
+                    const query = `SELECT ${queryArgs} FROM ` + 'Users WHERE id = ${parent.authorId}';
 
                     const grandParents = gqlProvider.contextVar[`${fieldName0}-0`][fieldName0];
                     contextVar[`${fieldName1}_properties`] = ['text', 'author'];
                     contextVar[`${fieldName1}_array`] = new Array<any>();
-                    TypesCommon.updateFieldTypeFilter(field, contextVar);
 
                     for (let  k = 0; k < grandParents.length; k++)
                         await typesCommon.resolveFunc01(gqlProvider, field, query, args, contextConst, contextVar);
