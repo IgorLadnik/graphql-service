@@ -3,8 +3,6 @@ import {IGqlProvider, GqlProvider, FieldDescription} from './gqlProvider';
 import _ from 'lodash';
 
 export class TypesCommon {
-    private static readonly pathDelim = '.';
-
     constructor(private logger: ILogger) { }
 
     resolveFunc01 = async (gql: IGqlProvider, field: any, query: string,
