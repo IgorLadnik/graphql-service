@@ -52,6 +52,8 @@ export class TypesCommon {
                         parent[levelFieldName] = updatedItem;
                 });
 
+                contextVar[`${fieldName}_array`]?.push(parent);
+
                 contextVar[`${levelFieldName}-${i}`] = { };
                 contextVar[`${levelFieldName}-${i}`][levelFieldName] = parent[levelFieldName];
             }
@@ -64,16 +66,34 @@ export class TypesCommon {
         const strData = `${typeName}_data`;
         const strProperties = `${typeName}_properties`;
         const inObj = contextVar[strData];
+        if (_.isNil(inObj))
+            return;
+
         const properties = contextVar[strProperties];
-        const outObj = TypesCommon.filterObject(inObj, properties);
+        const outObj = TypesCommon.filterInner(inObj, properties);
         contextVar[strData] = outObj;
         this.logger.log(`filter() for type ${typeName}`);
     }
 
-    static filterObject = (objOrg: any, properties: Array<string>): any => {
+    private static filterInner = (objOrg: any, properties: Array<string>): any => {
+        if (_.isNil(properties))
+            return objOrg;
+
         const objOut: any = { };
         properties.forEach((p: string) => objOut[p] = objOrg[p]);
         return objOut;
+    }
+
+    static filterObject = (fieldName: string, contextVar: any) => {
+        const properties = contextVar[`${fieldName}_properties`];
+        const arr = contextVar[`${fieldName}_array`];
+        if (properties?.length === 0 || arr?.length === 0)
+            return;
+
+        for (let i = 0; i < arr.length; i++)
+            for (let objProperty in arr[i])
+                if (!properties.includes(objProperty))
+                    delete arr[i][objProperty];
     }
 
     private static tuneQueryString = (query: string, parent: any): string => {

@@ -98,8 +98,6 @@ export class GqlProvider implements IGqlProvider {
 
             if (this.isErrorsFree)
                 this.actionTree.forEach((item: any) => results.push(this.contextVar[`${item.fieldName}-0`]));
-
-            //this.filterResults(this.actionTree, results);
         }
 
         // Output results
@@ -317,66 +315,6 @@ export class GqlProvider implements IGqlProvider {
             await this.executeActionTree(field.children);
         }
     }
-
-    // Recursive
-    filterResults = (actionTreeItem: Array<any>, results: Array<any>) => {
-        for (let i = 0; i < results.length; i++) {
-            const result = results[i];
-
-            //actionTreeItem
-
-        }
-    }
-
-    // // Recursive
-    // filterResults = (actionTreeItem: Array<any>, orgResults: Array<any>) => {
-    //     if (actionTreeItem.length === 0)
-    //         return;
-    //
-    //     let n = 1;
-    //     if (_.isArray(orgResults))
-    //         n = orgResults.length;
-    //
-    //     for (let x = 0; x < n; x++) {
-    //         const results = orgResults[x];
-    //
-    //         for (let k = 0; k < results.length; k++) {
-    //             const result = results[k];
-    //
-    //             for (let i = 0; i < actionTreeItem.length; i++) {
-    //                 let field = actionTreeItem[i];
-    //
-    //                 for (let propName in result) {
-    //                     let isContained = false;
-    //                     for (let j = 0; j < field.children.length; j++) {
-    //                         const fieldItem = field.children[j];
-    //                         if (propName === fieldItem.fieldName) {
-    //                             isContained = true;
-    //                             break;
-    //                         }
-    //                     }
-    //
-    //                     if (!isContained)
-    //                         delete result[propName];
-    //                     else
-    //                         this.filterResults(field.children, result[propName]);
-    //                 }
-    //
-    //
-    //                 // let arrResult: Array<any>
-    //                 // if (_.isArray(result))
-    //                 //     arrResult = result;
-    //                 // else {
-    //                 //     arrResult = new Array<any>();
-    //                 //     arrResult.push(result);
-    //                 // }
-    //                 //
-    //                 // this.filterResults(field.children, arrResult);
-    //                 //this.filterResults(field.children, result);
-    //             }
-    //         }
-    //     }
-    // }
 
     static composeFullFieldPath = (arrPath: Array<string>): string =>
         arrPath.reduce((a, c) => a + `${GqlProvider.pathDelim}${c}`)

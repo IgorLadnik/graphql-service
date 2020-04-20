@@ -99,11 +99,21 @@ export const typesCommon = new TypesCommon(logger);
                 type: User,
                 resolveFunc: async (field, args, contextConst, contextVar) => {
                     console.log('resolveFunc for myChats.messages.author');
-                    const grandParents = gqlProvider.contextVar['myChats-0']['myChats'];
-                    contextVar['User_properties'] = ['name'];
+
+                    const fieldName0 = field.arrPath[0];
+                    const fieldName1 = field.arrPath[1];
+
                     const query = 'SELECT * FROM Users WHERE id = ${parent.authorId}';
+
+                    const grandParents = gqlProvider.contextVar[`${fieldName0}-0`][fieldName0];
+                    contextVar[`${fieldName1}_properties`] = ['text', 'author'];
+                    contextVar[`${fieldName1}_array`] = new Array<any>();
+                    contextVar[`${field.typeName}_properties`] = field.children.map((c: FieldDescription) => c.fieldName);
+
                     for (let  k = 0; k < grandParents.length; k++)
                         await typesCommon.resolveFunc1(gqlProvider, field, query, args, contextConst, contextVar);
+
+                    TypesCommon.filterObject(fieldName1, contextVar);
                 }
             }
             //-----------------------------------------------------------------------
