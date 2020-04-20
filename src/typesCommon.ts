@@ -7,20 +7,7 @@ export class TypesCommon {
 
     constructor(private logger: ILogger) { }
 
-    resolveFunc0 = async (field: any, query: string,
-                          contextConst: any, contextVar: any): Promise<void> => {
-        this.logger.log(`common resolveFunc for ${field.arrPath[0]}`);
-        const sql = contextConst['sql'];
-        const rs = await sql.query(query);
-        const results = new Array<any>();
-        rs.forEach((item: any) => results.push(item));
-        const parent: any = { };
-        const fieldName = field.arrPath[0];
-        parent[fieldName] = results;
-        contextVar[`${fieldName}-0`] = parent;
-    }
-
-    resolveFunc1 = async (gql: IGqlProvider, field: any, query: string,
+    resolveFunc01 = async (gql: IGqlProvider, field: any, query: string,
                           args: any, contextConst: any, contextVar: any): Promise<void> => {
         const fullFieldPath = GqlProvider.composeFullFieldPath(field.arrPath);
         const type = gql.findRegisteredType(field.typeName);
@@ -30,12 +17,17 @@ export class TypesCommon {
 
         let count = 0;
         let parentsObj: any;
-        const fieldName = field.arrPath[level - 1];
+        const fieldName = level === 0 ? fullFieldPath : field.arrPath[level - 1];
+
+        if (level === 0)
+            contextVar[`${fieldName}-${count}`] = { };
+
         while (!_.isNil(parentsObj = contextVar[`${fieldName}-${count}`])) {
             let parents = parentsObj[fieldName];
             const levelFieldName = field.arrPath[level];
-            for (let i = 0; i < parents.length; i++) {
-                const parent = parents[i];
+            const n = _.isNil(parents) || parents.length === 0 ? 1 : parents.length;
+            for (let i = 0; i < n; i++) {
+                const parent: any = _.isNil(parents) ? { } : parents[i];
 
                 const rs = await sql.query(TypesCommon.tuneQueryString(query, parent));
 
