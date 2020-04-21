@@ -17,53 +17,54 @@ export async function connectToSql (logger: ILogger): Promise<any> {
     return sql;
 }
 
-export async function fetchData_user(field: any, args: any, contextConst: any, contextVar: any,
-                                     parent: any): Promise<Array<any>> {
-    console.log('fetchData_user()');
-    TypesCommon.updateFieldTypeFilter(field, contextVar);
-    const queryArgs = TypesCommon.getQueryArgs(field);
-    const query = `SELECT ${queryArgs} FROM Users WHERE id = ${args.id}`;
-    return fetchFromDb(query, contextConst, parent);
-}
+export const sqlResolveFns = {
+    fetchData_user: async (field: any, args: any, contextConst: any, contextVar: any,
+                                         parent: any): Promise<Array<any>> => {
+        console.log('fetchData_user()');
+        TypesCommon.updateFieldTypeFilter(field, contextVar);
+        const queryArgs = TypesCommon.getQueryArgs(field);
+        const query = `SELECT ${queryArgs} FROM Users WHERE id = ${args.id}`;
+        return sqlResolveFns.fetchFromDb(query, contextConst, parent);
+    },
 
-export async function fetchData_myChats(field: any, args: any, contextConst: any, contextVar: any,
-                                        parent: any): Promise<Array<any>> {
-    console.log('fetchData_myChats()');
-    TypesCommon.updateFieldTypeFilter(field, contextVar); //?
-    const query = `SELECT * FROM Chats WHERE id in
+    fetchData_myChats: async (field: any, args: any, contextConst: any, contextVar: any,
+                                            parent: any): Promise<Array<any>> => {
+        console.log('fetchData_myChats()');
+        TypesCommon.updateFieldTypeFilter(field, contextVar); //?
+        const query = `SELECT * FROM Chats WHERE id in
                                      (SELECT chatId FROM Participants WHERE userId in
                                         (SELECT id FROM Users WHERE name = 'Rachel'))`;
-    return fetchFromDb(TypesCommon.tuneQueryString(query, parent), contextConst, parent);
-}
+        return sqlResolveFns.fetchFromDb(TypesCommon.tuneQueryString(query, parent), contextConst, parent);
+    },
 
-export async function fetchData_myChats_participants(field: any, args: any, contextConst: any, contextVar: any,
-                                                     parent: any): Promise<Array<any>> {
-    console.log('fetchData_myChats_participants()');
-    TypesCommon.updateFieldTypeFilter(field, contextVar);
-    const queryArgs = TypesCommon.getQueryArgs(field);
-    const query =
-        `SELECT ${queryArgs} FROM Users WHERE id in` +
-        '(SELECT userId FROM Participants WHERE chatId = ${parent.id})';
-    return fetchFromDb(TypesCommon.tuneQueryString(query, parent), contextConst, parent);
-}
+    fetchData_myChats_participants: async (field: any, args: any, contextConst: any, contextVar: any,
+                                                         parent: any): Promise<Array<any>> => {
+        console.log('fetchData_myChats_participants()');
+        TypesCommon.updateFieldTypeFilter(field, contextVar);
+        const queryArgs = TypesCommon.getQueryArgs(field);
+        const query =
+            `SELECT ${queryArgs} FROM Users WHERE id in` +
+            '(SELECT userId FROM Participants WHERE chatId = ${parent.id})';
+        return sqlResolveFns.fetchFromDb(TypesCommon.tuneQueryString(query, parent), contextConst, parent);
+    },
 
-export async function fetchData_myChats_messages(field: any, args: any, contextConst: any, contextVar: any,
-                                                 parent: any): Promise<Array<any>> {
-    console.log('fetchData_myChats_messages()');
-    const query = 'SELECT id, text, authorId FROM ChatMessages WHERE chatId = ${parent.id}';
-    contextVar['ChatMessage_properties'] = ['text', 'authorId'];
-    return fetchFromDb(TypesCommon.tuneQueryString(query, parent), contextConst, parent);
-}
+    fetchData_myChats_messages: async (field: any, args: any, contextConst: any, contextVar: any,
+                                                     parent: any): Promise<Array<any>> => {
+        console.log('fetchData_myChats_messages()');
+        const query = 'SELECT id, text, authorId FROM ChatMessages WHERE chatId = ${parent.id}';
+        contextVar['ChatMessage_properties'] = ['text', 'authorId'];
+        return sqlResolveFns.fetchFromDb(TypesCommon.tuneQueryString(query, parent), contextConst, parent);
+    },
 
-export async function fetchData_myChats_messages_author(field: any, args: any, contextConst: any, contextVar: any,
-                                                        parent: any): Promise<Array<any>> {
-    console.log('fetchData_myChats_messages_author()');
-    TypesCommon.updateFieldTypeFilter(field, contextVar);
-    const queryArgs = TypesCommon.getQueryArgs(field);
-    const query = `SELECT ${queryArgs} FROM ` + 'Users WHERE id = ${parent.authorId}';
-    return fetchFromDb(TypesCommon.tuneQueryString(query, parent), contextConst, parent);
-}
+    fetchData_myChats_messages_author: async (field: any, args: any, contextConst: any, contextVar: any,
+                                                            parent: any): Promise<Array<any>> => {
+        console.log('fetchData_myChats_messages_author()');
+        TypesCommon.updateFieldTypeFilter(field, contextVar);
+        const queryArgs = TypesCommon.getQueryArgs(field);
+        const query = `SELECT ${queryArgs} FROM ` + 'Users WHERE id = ${parent.authorId}';
+        return sqlResolveFns.fetchFromDb(TypesCommon.tuneQueryString(query, parent), contextConst, parent);
+    },
 
-export async function fetchFromDb(query: string, contextConst: any, parent: any): Promise<Array<any>> {
-    return await contextConst['sql'].query(TypesCommon.tuneQueryString(query, parent));
+    fetchFromDb: async (query: string, contextConst: any, parent: any): Promise<Array<any>> =>
+        await contextConst['sql'].query(TypesCommon.tuneQueryString(query, parent))
 }

@@ -1,6 +1,5 @@
 import { Role } from "./types";
-import { GqlProvider, IGqlProvider } from "./gqlProvider";
-import _ from "lodash";
+import { TypesCommon } from './typesCommon';
 
 export const users = [
     { type: 'User', id: 1, name: 'Moshe',   email: 'moshe@a.com',    role: Role.Admin },
@@ -43,20 +42,52 @@ export const participants = [
     { id: 9, chatId: 5, userId: 7 },
 ]
 
-export const getUserIdByChatId = (arrChatId: Array<number>): any => {
-    participants.forEach((p: any) => {
-        if (arrChatId.includes(p.chatId))
-            return p.userId;
+export const testResolveFns = {
+    getObjects: async (arr: Array<any>, propertyName: string, arrId: Array<any>): Promise<Array<any>> => {
+        const results = new Array<any>();
+        arr.forEach((p: any) => {
+            if (arrId.includes(p[propertyName]))
+                results.push(p);
+        });
 
-        return -1;
-    });
-}
+        return results;
+    },
 
-export const getById = (collecionName: string, arrId: Array<number>): any => {
-    [collecionName].forEach((p: any) => {
-        if (arrId.includes(p.id))
-            return p;
+    fetchData_user: async (field: any, args: any, contextConst: any, contextVar: any,
+                                              parent: any): Promise<Array<any>> => {
+        console.log('fetchData_user_test()');
+        TypesCommon.updateFieldTypeFilter(field, contextVar);
+        return await testResolveFns.getObjects(users, 'id', [args.id]);
+    },
 
-        return null;
-    });
+    fetchData_myChats: async (field: any, args: any, contextConst: any, contextVar: any,
+                                                 parent: any): Promise<Array<any>> => {
+        console.log('fetchData_myChats_test()');
+        TypesCommon.updateFieldTypeFilter(field, contextVar); //?
+        const u = (await testResolveFns.getObjects(users, 'name', ['Rachel']))[0];
+        const ps = await testResolveFns.getObjects(participants, 'userId', [u.id]);
+        return await testResolveFns.getObjects(chats, 'id', ps.map((p: any) => p.chatId));
+    },
+
+    fetchData_myChats_participants: async (field: any, args: any, contextConst: any, contextVar: any,
+                                                              parent: any): Promise<Array<any>> => {
+        console.log('fetchData_myChats_participants_test()');
+        TypesCommon.updateFieldTypeFilter(field, contextVar);
+        const ps = await testResolveFns.getObjects(participants, 'chatId', [parent.id]);
+        return await testResolveFns.getObjects(users, 'id', ps.map((p: any) => p.userId));
+    },
+
+    fetchData_myChats_messages: async (field: any, args: any, contextConst: any, contextVar: any,
+                                                          parent: any): Promise<Array<any>> => {
+        console.log('fetchData_myChats_messages_test()');
+        contextVar['ChatMessage_properties'] = ['text', 'authorId'];
+        return await testResolveFns.getObjects(chatMessages, 'chatId', [parent.id]);
+    },
+
+    fetchData_myChats_messages_author: async (field: any, args: any, contextConst: any, contextVar: any,
+                                                                 parent: any): Promise<Array<any>> => {
+        console.log('fetchData_myChats_messages_author_test()');
+        TypesCommon.updateFieldTypeFilter(field, contextVar);
+        return await testResolveFns.getObjects(users, 'id', [parent.authorId]);
+    }
 }
