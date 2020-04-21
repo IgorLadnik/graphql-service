@@ -259,11 +259,14 @@ export class GqlProvider implements IGqlProvider {
         JSON.stringify(obj, null, '\t')
 
     private static createOutput = (arr: Array<any>): any => {
+        let data: any = { };
         switch (arr.length) {
             case 0:  return 'Empty';
-            case 1:  return arr[0];
-            default: return arr;
+            case 1:  data = arr[0]; break;
+            default: data = arr; break;
         }
+
+        return { data };
     }
 
     private static getFullFieldPath = (prevPath: string, fieldName: string): string => {
