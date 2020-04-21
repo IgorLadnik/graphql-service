@@ -84,6 +84,10 @@ Currently the code requires SQL Server database ChatsDb that is not provided her
 
 # Issues
 
-- N+1 queries problem meaning multiple data fetching on each query level 
-- Full generalization of resolve functions looks problematic
+- N+1 queries problem meaning multiple data fetching on each query level, and
+- Full generalization of resolve functions looks problematic.
+
+Both are fundamental problems. 
+The first problem may be alleviated with some caching (possibly with using some ORM).
+The second one may be addressed with some classification of queries.
 
