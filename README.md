@@ -1,6 +1,6 @@
 # What Does It Do?
 
-This sample shows some approach to "schemaless" qraphQL.
+This sample shows some approach to "schemaless" graphQL.
 It is a Web server.
 It 
 - receives graphQL queries,
