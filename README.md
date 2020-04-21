@@ -14,23 +14,20 @@ File *types.ts* contains types objects.
 ## Go Schemaless
 
 In order to be able to process any query hook functions of **graphqlHTTP** were intercepted:  
-`
-> 
-> app.use('/graphql', graphqlHTTP({
->     schema: gqlProvider.schema,
->     graphiql: true,
-> 
->     customExecuteFn: async (args: ExecutionArgs): Promise<any> =>
->         await gqlProvider.executeFn(args.document.definitions[0]),
-> 
->     customValidateFn: (schema, documentAST, validationRules): any =>
->         gqlProvider.validateFn(schema, documentAST, validationRules),
-> 
->     customFormatErrorFn: (error: GraphQLError) =>
->         gqlProvider.formatErrorFn(error),
-> })); 
-> 
-`
+ 
+	app.use('/graphql', graphqlHTTP({
+	 schema: gqlProvider.schema,
+	 graphiql: true,
+
+	 customExecuteFn: async (args: ExecutionArgs): Promise<any> =>
+		 await gqlProvider.executeFn(args.document.definitions[0]),
+
+	 customValidateFn: (schema, documentAST, validationRules): any =>
+		 gqlProvider.validateFn(schema, documentAST, validationRules),
+
+	 customFormatErrorFn: (error: GraphQLError) =>
+		 gqlProvider.formatErrorFn(error),
+	})); 
 
 # Notes
 
