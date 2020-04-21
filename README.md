@@ -77,6 +77,13 @@ Another recursive method **executeActionTree()** of class **GqlProvider** activa
 
 # Notes
 
+One build error takes place for unknown reason:
+ error TS2749: 'StringDecoder' refers to a value, but is being used as a type here.
+
+138         decoder: StringDecoder | null;
+
+It does not affect code execution.
+
 Currently, by default the code runs without execution of resolve functions which require a local database.
 
 - Simple queries tested so far. No mutations yet.
