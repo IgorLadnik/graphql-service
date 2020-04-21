@@ -13,9 +13,6 @@ It and class TypesCommon (file <i>typesCommon.ts</i>) provide mechanism for exec
 File <i>types.ts</i> contains types objects.
 </p>
 
-File 
-
-
 # Notes
 
 - Simple queries tested so far. No mutations yet.
