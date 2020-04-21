@@ -5,12 +5,11 @@ import _ from 'lodash';
 export class TypesCommon {
     constructor(private logger: ILogger) { }
 
-    resolveFunc01 = async (gql: IGqlProvider, field: any, query: string,
-                           args: any, contextConst: any, contextVar: any): Promise<void> => {
+    resolveFunc01 = async (gql: IGqlProvider, field: any, args: any, contextConst: any, contextVar: any,
+                           queryFn: Function): Promise<void> => {
         const fullFieldPath = GqlProvider.composeFullFieldPath(field.arrPath);
         const type = gql.findRegisteredType(field.typeName);
         this.logger.log(`common resolveFunc for ${fullFieldPath}`);
-        const sql = contextConst['sql'];
         const level = field.arrPath.length - 1;
 
         let count = 0;
@@ -27,11 +26,11 @@ export class TypesCommon {
             for (let i = 0; i < n; i++) {
                 const parent: any = _.isNil(parents) ? { } : parents[i];
 
-                const rs = await sql.query(TypesCommon.tuneQueryString(query, parent));
+                const items = await queryFn(field, args, contextConst, contextVar, parent);
 
                 parent[levelFieldName] = new Array<any>();
                 contextVar[levelFieldName] = new Array<any>();
-                rs.forEach((item: any) => {
+                items.forEach((item: any) => {
                     const dataName = `${type.type}_data`;
                     contextVar[dataName] = item;
                     type.resolveFunc(field, args, contextConst, contextVar);
@@ -86,7 +85,7 @@ export class TypesCommon {
                     delete arr[i][objProperty];
     }
 
-    private static tuneQueryString = (query: string, parent: any): string => {
+    static tuneQueryString = (query: string, parent: any): string => {
         let result = query;
         const tokenized = query.split('${', 10);
         tokenized.forEach((str: string) => {
