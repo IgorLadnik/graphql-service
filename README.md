@@ -77,7 +77,7 @@ Another recursive method **executeActionTree()** of class **GqlProvider** activa
 
 # Notes
 
-Currently the code requires SQL Server database ChatsDb that is not provided here.
+Currently, by default the code runs without execution of resolve functions which require a local database.
 
 - Simple queries tested so far. No mutations yet.
 - "Naive" database operations with direct SQL queries without any ORM or caching.
