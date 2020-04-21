@@ -8,9 +8,32 @@ It
 - executes some selected queries with simple SQL Server database with an attempt to generalize resolve functions.
 
 <p>
-Class GqlProvider (file <i>gqlProvider.ts</i>) is responsible for parsing query.
-It and class TypesCommon (file <i>typesCommon.ts</i>) provide mechanism for execution of resolve functions.
-File <i>types.ts</i> contains types objects.
+Class **GqlProvider** (file *gqlProvider.ts*) is responsible for parsing query.
+It and class **TypesCommon** (file *typesCommon.ts*) provide mechanism for execution of resolve functions.
+File *types.ts* contains types objects.
+</p>
+
+##Go Schemaless
+
+<p>
+In order to be able to process any query hook functions of **graphqlHTTP** were intercepted:  
+
+app.use('/graphql', graphqlHTTP({
+    schema: gqlProvider.schema,
+    graphiql: true,
+
+    customExecuteFn: async (args: ExecutionArgs): Promise<any> =>
+        await gqlProvider.executeFn(args.document.definitions[0]),
+
+    customValidateFn: (schema, documentAST, validationRules): any =>
+        gqlProvider.validateFn(schema, documentAST, validationRules),
+
+    customFormatErrorFn: (error: GraphQLError) =>
+        gqlProvider.formatErrorFn(error),
+})); 
+
+
+
 </p>
 
 # Notes
