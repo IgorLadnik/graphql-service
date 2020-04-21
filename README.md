@@ -14,6 +14,7 @@ File *types.ts* contains types objects.
 ## Go Schemaless
 
 In order to be able to process any query hook functions of **graphqlHTTP** were intercepted:  
+`
 > 
 > app.use('/graphql', graphqlHTTP({
 >     schema: gqlProvider.schema,
@@ -29,6 +30,7 @@ In order to be able to process any query hook functions of **graphqlHTTP** were 
 >         gqlProvider.formatErrorFn(error),
 > })); 
 > 
+`
 
 # Notes
 
