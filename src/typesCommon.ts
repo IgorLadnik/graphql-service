@@ -1,5 +1,5 @@
 import { ILogger } from './logger';
-import {IGqlProvider, GqlProvider, FieldDescription} from './gqlProvider';
+import { IGqlProvider, GqlProvider, FieldDescription } from './gqlProvider';
 import _ from 'lodash';
 
 export class TypesCommon {

@@ -8,7 +8,7 @@ import { ExecutionArgs, GraphQLError } from 'graphql';
 import { ILogger, Logger } from './logger';
 import { User, ChatMessage, Chat, Role } from './types';
 import { SqlServerProvider } from './sqlServerProvider';
-import {TypesCommon} from './typesCommon';
+import { TypesCommon } from './typesCommon';
 
 export const logger = new Logger();
 export const typesCommon = new TypesCommon(logger);
@@ -19,7 +19,7 @@ export const typesCommon = new TypesCommon(logger);
     app.use('*', cors());
     app.use(compression());
 
-    const gqlProvider = new GqlProvider(logger);
+    const gqlProvider = new GqlProvider(logger, false);
 
     app.use('/graphql', graphqlHTTP({
         schema: gqlProvider.schema,

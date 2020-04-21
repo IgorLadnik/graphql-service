@@ -37,7 +37,7 @@ export class GqlProvider implements IGqlProvider {
 
     private resolvedFields: ResolvedFieldsMap = { };
     private actionTree: any;
-    private errors: Array<string>;
+    private errors = new Array<string>();
 
     // For recursion
     private arrPath: Array<string>;
@@ -45,7 +45,7 @@ export class GqlProvider implements IGqlProvider {
     private field: Field;
     private readonly types = Array<any>();
 
-    constructor(private logger: ILogger) {
+    constructor(private logger: ILogger, private withExecution: boolean = true) {
         const config = new GraphQLObjectType({ name: 'Query' }).toConfig();
         config.fields['_'] = GqlProvider.createFreshDummyField();
         this.schema = new GraphQLSchema({ query: new GraphQLObjectType(config) });
@@ -82,32 +82,34 @@ export class GqlProvider implements IGqlProvider {
             this.handleError(`*** Error on executeFn: ${err}`);
         }
 
+        let output: any;
         const results = new Array<any>();
         if (this.isErrorsFree) {
-            const strActionTree = GqlProvider.createOutput(this.actionTree);
-            this.logger.log(GqlProvider.jsonStringifyFormatted(strActionTree));
+            output = GqlProvider.createOutput(this.actionTree, 'action_tree');
+            this.logger.log(GqlProvider.jsonStringifyFormatted(output));
             this.logger.log('--------------------------------------------------');
 
-            // Actual data processing according to this.actionTree
-            try {
-                await this.executeActionTree(this.actionTree);
-            }
-            catch (err) {
-                this.handleError(`*** Error on executeActionTree: ${err}`);
-            }
+            if (this.withExecution) {
+                // Actual data processing according to this.actionTree
+                try {
+                    await this.executeActionTree(this.actionTree);
+                } catch (err) {
+                    this.handleError(`*** Error on executeActionTree: ${err}`);
+                }
 
-            if (this.isErrorsFree)
-                this.actionTree.forEach((item: any) => results.push(this.contextVar[`${item.fieldName}-0`]));
+                if (this.isErrorsFree) {
+                    this.actionTree.forEach((item: any) => results.push(this.contextVar[`${item.fieldName}-0`]));
+                    output = GqlProvider.createOutput(results, 'data');
+                }
+            }
         }
 
-        // Output results
-        let output: any = '';
-        if (this.isErrorsFree)
-            output = GqlProvider.createOutput(results);
-        else {
-            let strErrors = '';
-            this.errors.forEach((error: string) => strErrors += error);
+        if (!this.isErrorsFree) {
+            // Errors
+            let strErrors = 'Errors:';
+            this.errors.forEach((error: string) => strErrors += `\n- ${error}`);
             output = strErrors;
+            this.logger.log(output);
         }
 
         this.logger.log('--------------------------------------------------');
@@ -258,7 +260,7 @@ export class GqlProvider implements IGqlProvider {
         //JSON.stringify(jsObj, null, 4);    // stringify with 4 spaces at each level
         JSON.stringify(obj, null, '\t')
 
-    private static createOutput = (arr: Array<any>): any => {
+    private static createOutput = (arr: Array<any>, outerObjectName: string): any => {
         let data: any = { };
         switch (arr.length) {
             case 0:  return 'Empty';
@@ -266,7 +268,7 @@ export class GqlProvider implements IGqlProvider {
             default: data = arr; break;
         }
 
-        return { data };
+        return { [outerObjectName]: data };
     }
 
     private static getFullFieldPath = (prevPath: string, fieldName: string): string => {
@@ -333,5 +335,5 @@ export class GqlProvider implements IGqlProvider {
     private static isSimpleType = (typeName: string): boolean =>
         ['string', 'number', 'boolean'].includes(typeName);
 
-    isErrorsFree: boolean = _.isNil(this.errors) || this.errors.length === 0;
+    isErrorsFree: boolean = this.errors.length === 0;
 }
