@@ -13,7 +13,7 @@ import { testResolveFns } from './resolve_funcs/cached/cachedDataResolveFuncs';
 export const logger = new Logger();
 export const typesCommon = new TypesCommon(logger);
 
-const isTestObjects = true;
+const isTestObjects = false;//true;
 
 (async function main() {
     const app = express();
