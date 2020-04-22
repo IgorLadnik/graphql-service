@@ -43,22 +43,22 @@ First, its instance is created:
 Then type objects of domain entities (file *types.ts*) and resolve functions should be registered with this object:
 
 	gqlProvider
-        .registerTypes(User, ChatMessage, Chat)
-        .registerResolvedFields(
-			{
-				fullFieldPath: 'user',
-				type: User,
-				resolveFunc: async (field, args, contextConst, contextVar) => {
-					TypesCommon.updateFieldTypeFilter(field, contextVar);
-					const queryArgs = TypesCommon.getQueryArgs(field);
-					const query = `SELECT ${queryArgs} FROM Users WHERE id = ${args.id}`;
-					await typesCommon.resolveFunc01(gqlProvider, field, query, args, contextConst, contextVar);
-				}
-			},
-			{
-				//.....
-			}
-		);
+      .registerTypes(User, ChatMessage, Chat)
+      .registerResolvedFields(
+		{
+		  fullFieldPath: 'user',
+		  type: User,
+		  resolveFunc: async (field, args, contextConst, contextVar) => {
+			  TypesCommon.updateFieldTypeFilter(field, contextVar);
+			  const queryArgs = TypesCommon.getQueryArgs(field);
+			  const query = `SELECT ${queryArgs} FROM Users WHERE id = ${args.id}`;
+			  await typesCommon.resolveFunc01(gqlProvider, field, query, args, contextConst, contextVar);
+		  }
+		},
+		{
+		  //.....
+		}
+	  );
 		
 In registered resolved field the same type is also provided for the case when the function produces array of this type.
 E.g., type **User** should be assigned in both cases when resolve function produces either **User** or **User[]**. 
