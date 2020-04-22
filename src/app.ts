@@ -13,7 +13,7 @@ import { testResolveFns } from './resolve_funcs/cached/cachedDataResolveFuncs';
 export const logger = new Logger();
 export const typesCommon = new TypesCommon(logger);
 
-const isTestObjects = false;//true;
+const isTestObjects = false;  // false - to use SQL Server
 
 (async function main() {
     const app = express();
