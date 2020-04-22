@@ -7,8 +7,8 @@ import { ExecutionArgs, GraphQLError } from 'graphql';
 import { Logger } from './logger';
 import { User, ChatMessage, Chat, Role } from './types/types';
 import { TypesCommon } from './gql_infra/typesCommon';
-import { sqlResolveFns, connectToSql } from './resolvers/sql/sqlServerResolveFuncs';
-import { testResolveFns } from './resolvers/cached/cachedDataResolvers';
+import { sqlResolveFns, connectToSql } from './resolve_funcs/sql/sqlServerResolveFuncs';
+import { testResolveFns } from './resolve_funcs/cached/cachedDataResolveFuncs';
 
 export const logger = new Logger();
 export const typesCommon = new TypesCommon(logger);
