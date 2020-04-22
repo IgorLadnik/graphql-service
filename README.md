@@ -48,12 +48,14 @@ Then type objects of domain entities (file *types.ts*) and resolve functions sho
 		{
 		  fullFieldPath: 'user',
 		  type: User,
-		  resolveFunc: async (field, args, contextConst, contextVar) => {
-			  TypesCommon.updateFieldTypeFilter(field, contextVar);
-			  const queryArgs = TypesCommon.getQueryArgs(field);
-			  const query = `SELECT ${queryArgs} FROM Users WHERE id = ${args.id}`;
-			  await typesCommon.resolveFunc01(gqlProvider, field, query, args, contextConst, contextVar);
-		  }
+		  resolveFunc: async (field, args, contextConst, contextVar) =>
+                            await typesCommon.resolveFunc01(
+                               gqlProvider, 
+                               field, 
+                               args, 
+                               contextConst, 
+                               contextVar,
+                               resolveFns.fetchData_user)
 		},
 		{
 		  //.....
