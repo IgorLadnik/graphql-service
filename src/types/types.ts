@@ -1,4 +1,4 @@
-import { typesCommon } from './app';
+import { typesCommon } from '../app';
 
 export const User = {
     type: 'User',

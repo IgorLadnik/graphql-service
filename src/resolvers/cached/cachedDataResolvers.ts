@@ -1,5 +1,5 @@
-import { Role } from "./types";
-import { TypesCommon } from './typesCommon';
+import { Role } from "../../types/types";
+import { TypesCommon } from '../../gql_infra/typesCommon';
 
 export const users = [
     { type: 'User', id: 1, name: 'Moshe',   email: 'moshe@a.com',    role: Role.Admin },

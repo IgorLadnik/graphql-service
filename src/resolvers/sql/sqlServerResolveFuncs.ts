@@ -1,6 +1,6 @@
-import { ILogger } from './logger';
+import { ILogger } from '../../logger';
 import { SqlServerProvider } from './sqlServerProvider';
-import { TypesCommon } from './typesCommon';
+import { TypesCommon } from '../../gql_infra/typesCommon';
 
 export async function connectToSql (logger: ILogger): Promise<any> {
     const server = 'IGORMAIN\\MSSQLSERVER01';

@@ -2,7 +2,7 @@ const graphql = require('graphql');
 const { GraphQLObjectType, GraphQLSchema, GraphQLID } = graphql;
 import { DocumentNode, GraphQLError } from 'graphql';
 import _ from 'lodash';
-import { ILogger } from './logger';
+import { ILogger } from '../logger';
 import { ValidationRule } from 'graphql/validation/ValidationContext';
 
 export interface ResolvedFieldsMap {
@@ -67,8 +67,6 @@ export class GqlProvider implements IGqlProvider {
     formatErrorFn = (error: GraphQLError) => this.logger.log(`*** Error: ${error}`);
 
     executeFn = async (inboundObj: any): Promise<string> => {
-        this.logger.log('--------------------------------------------------');
-
         // Initialize appropriate variables for new query
         this.errors = new Array<string>();
         this.actionTree = new Array<any>();
@@ -84,32 +82,38 @@ export class GqlProvider implements IGqlProvider {
 
         let output: any;
         const results = new Array<any>();
-        if (this.isErrorsFree) {
+        if (this.isErrorsFree()) {
+            this.logger.log('-- Action Tree -----------------------------------');
             output = GqlProvider.createOutput(this.actionTree, 'action_tree');
             this.logger.log(GqlProvider.jsonStringifyFormatted(output));
-            this.logger.log('--------------------------------------------------');
 
             if (this.withExecution) {
                 // Actual data processing according to this.actionTree
+                this.logger.log('-- Execution Trace -------------------------------');
                 try {
                     await this.executeActionTree(this.actionTree);
                 } catch (err) {
                     this.handleError(`*** Error on executeActionTree: ${err}`);
                 }
 
-                if (this.isErrorsFree) {
+                if (this.isErrorsFree()) {
                     this.actionTree.forEach((item: any) => results.push(this.contextVar[`${item.fieldName}-0`]));
                     output = GqlProvider.createOutput(results, 'data');
                 }
             }
         }
 
-        if (!this.isErrorsFree) {
+        if (this.isErrorsFree()) {
+            this.logger.log('-- Execution Result ------------------------------');
+            this.logger.log(GqlProvider.jsonStringifyFormatted(output));
+        }
+        else {
             // Errors
             let strErrors = 'Errors:';
             this.errors.forEach((error: string) => strErrors += `\n- ${error}`);
-            output = strErrors;
-            this.logger.log(output);
+            this.logger.log('-- Errors ----------------------------------------');
+            this.logger.log(strErrors);
+            output = this.errors;
         }
 
         this.logger.log('--------------------------------------------------');
@@ -335,5 +339,6 @@ export class GqlProvider implements IGqlProvider {
     private static isSimpleType = (typeName: string): boolean =>
         ['string', 'number', 'boolean'].includes(typeName);
 
-    isErrorsFree: boolean = this.errors.length === 0;
+    isErrorsFree = (): boolean =>
+        this.errors.length === 0;
 }
