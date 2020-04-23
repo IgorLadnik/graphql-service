@@ -63,7 +63,7 @@ export const typesCommon = new TypesCommon(gqlProvider, logger);
                 fullFieldPath: 'user',
                 type: User,
                 resolveFunc: async (field, args, contextConst, contextVar) =>
-                    await typesCommon.resolveFunc01(field, args, contextConst, contextVar,
+                    await typesCommon.resolveFunc(field, args, contextConst, contextVar,
                         resolveFns.fetchData_user)
             },
 
@@ -72,39 +72,34 @@ export const typesCommon = new TypesCommon(gqlProvider, logger);
                 fullFieldPath: 'myChats',
                 type: Chat,
                 resolveFunc: async (field, args, contextConst, contextVar) =>
-                    await typesCommon.resolveFunc01(field, args, contextConst, contextVar,
+                    await typesCommon.resolveFunc(field, args, contextConst, contextVar,
                         resolveFns.fetchData_myChats)
             },
             {
                 fullFieldPath: 'myChats.participants',
                 type: User,
                 resolveFunc: async (field, args, contextConst, contextVar) =>
-                    await typesCommon.resolveFunc01(field, args, contextConst, contextVar,
+                    await typesCommon.resolveFunc(field, args, contextConst, contextVar,
                         resolveFns.fetchData_myChats_participants)
             },
             {
                 fullFieldPath: 'myChats.messages',
                 type: ChatMessage,
                 resolveFunc: async (field, args, contextConst, contextVar) =>
-                    await typesCommon.resolveFunc01(field, args, contextConst, contextVar,
+                    await typesCommon.resolveFunc(field, args, contextConst, contextVar,
                         resolveFns.fetchData_myChats_messages)
             },
             {
                 fullFieldPath: 'myChats.messages.author',
                 type: User,
                 resolveFunc: async (field, args, contextConst, contextVar) => {
-                    const fieldName0 = field.arrPath[0];
-                    const fieldName1 = field.arrPath[1];
+                    const fieldName = field.arrPath[1];
+                    TypesCommon.setFilter(fieldName, ['text', 'author'], contextVar);
 
-                    const grandParents = gqlProvider.contextVar[`${fieldName0}-0`][fieldName0];
-                    contextVar[`${fieldName1}${TypesCommon.suffixPropsFilter}`] = ['text', 'author'];
-                    contextVar[`${fieldName1}${TypesCommon.suffixArray}`] = new Array<any>();
+                    await typesCommon.resolveFunc(field, args, contextConst, contextVar,
+                        resolveFns.fetchData_myChats_messages_author);
 
-                    for (let k = 0; k < grandParents.length; k++)
-                        await typesCommon.resolveFunc01(field, args, contextConst, contextVar,
-                            resolveFns.fetchData_myChats_messages_author);
-
-                    TypesCommon.filterObject(fieldName1, contextVar);
+                    TypesCommon.applyFilter(fieldName, contextVar);
                 }
             }
             //-----------------------------------------------------------------------

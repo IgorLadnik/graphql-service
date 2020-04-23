@@ -9,21 +9,28 @@ export class TypesCommon {
 
     constructor(private gql: IGqlProvider, private logger: ILogger) { }
 
-    resolveFunc01 = async (field: any, args: any, contextConst: any, contextVar: any,
-                           queryFn: Function): Promise<void> => {
-        const fullFieldPath = GqlProvider.composeFullFieldPath(field.arrPath);
-        const type = this.gql.findRegisteredType(field.typeName);
-        this.logger.log(`common resolveFunc for ${fullFieldPath}`);
+    resolveFunc = async (field: any, args: any, contextConst: any, contextVar: any,
+                           queryFn: Function, currentLevel: number = 0): Promise<void> => {
         const level = field.arrPath.length - 1;
+        if (level > 1 && currentLevel < level - 1) {
+            const fieldName = field.arrPath[currentLevel];
+            const parents = contextVar[`${fieldName}-${currentLevel}`][fieldName];
+            for (let i = 0; i < parents.length; i++)
+                await this.resolveFunc(field, args, contextConst, contextVar, queryFn, currentLevel + 1);
+        }
+        else {
+            const fullFieldPath = GqlProvider.composeFullFieldPath(field.arrPath);
+            const type = this.gql.findRegisteredType(field.typeName);
+            this.logger.log(`common resolveFunc for ${fullFieldPath}`);
 
-        let count = 0;
-        let parentsObj: any;
-        const fieldName = level === 0 ? fullFieldPath : field.arrPath[level - 1];
+            let count = 0;
+            let parentsObj: any;
+            const fieldName = level === 0 ? fullFieldPath : field.arrPath[level - 1];
 
-        if (level === 0)
-            contextVar[`${fieldName}-${count}`] = { };
+            if (level === 0)
+                contextVar[`${fieldName}-${count}`] = { };
 
-        while (!_.isNil(parentsObj = contextVar[`${fieldName}-${count}`])) {
+            while (!_.isNil(parentsObj = contextVar[`${fieldName}-${count}`])) {
             let parents = parentsObj[fieldName];
             const levelFieldName = field.arrPath[level];
             const n = _.isNil(parents) || parents.length === 0 ? 1 : parents.length;
@@ -52,6 +59,7 @@ export class TypesCommon {
 
             count++;
         }
+        }
     }
 
     filter = (typeName: string, contextVar: any) => {
@@ -76,10 +84,15 @@ export class TypesCommon {
         return objOut;
     }
 
-    static filterObject = (fieldName: string, contextVar: any) => {
+    static setFilter = (fieldName: string, arrFilter: Array<string>, contextVar: any) => {
+        contextVar[`${fieldName}${TypesCommon.suffixPropsFilter}`] = arrFilter;
+        contextVar[`${fieldName}${TypesCommon.suffixArray}`] = new Array<any>();
+    }
+
+    static applyFilter = (fieldName: string, contextVar: any) => {
         const properties = contextVar[`${fieldName}${TypesCommon.suffixPropsFilter}`];
         const arr = contextVar[`${fieldName}${TypesCommon.suffixArray}`];
-        if (properties?.length === 0 || arr?.length === 0)
+        if (properties?.length === 0 || _.isNil(arr) || arr.length === 0)
             return;
 
         for (let i = 0; i < arr.length; i++)
