@@ -12,13 +12,12 @@ This schema is fixed and cannot be change while the server is running.
 The schema restricts inbound queries.
 
 The main goal of the project is to make GQL Web server as flexible as possible.
-To achieve this, first ew need to open the server to any formally valid GQL query.
+To achieve this, first we need to open the server to any formally valid GQL query.
 So, in contrast to normal GQL usage, the project does not use GQL schema and therefore is open to any inbound GQL query.
 To achieve this hook methods of **graphqlHTTP** object are implemented (please see details below).
 These methods block usage of the schema, but at he same time deny standard way for parsing and resolve functions call.
 So custom mechanism for parsing and call of resolve function is implemented.
-
-Second, attept is made to provide some general resolcve functions or at least boilerplate for them (this work is still in progress).
+Second, attept is made to provide some general resolve functions or at least boilerplate for them (this work is still in progress).
 
 Schemaless approach gives developer more freedom to define data types.
 It is assumed that he server will receive those types on its start before starting to listen for queries 
