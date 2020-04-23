@@ -7,12 +7,12 @@ export class TypesCommon {
     static readonly suffixPropsFilter = '_properties_filter';
     static readonly suffixArray = '_array';
 
-    constructor(private logger: ILogger) { }
+    constructor(private gql: IGqlProvider, private logger: ILogger) { }
 
-    resolveFunc01 = async (gql: IGqlProvider, field: any, args: any, contextConst: any, contextVar: any,
+    resolveFunc01 = async (field: any, args: any, contextConst: any, contextVar: any,
                            queryFn: Function): Promise<void> => {
         const fullFieldPath = GqlProvider.composeFullFieldPath(field.arrPath);
-        const type = gql.findRegisteredType(field.typeName);
+        const type = this.gql.findRegisteredType(field.typeName);
         this.logger.log(`common resolveFunc for ${fullFieldPath}`);
         const level = field.arrPath.length - 1;
 

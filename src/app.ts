@@ -10,18 +10,17 @@ import { TypesCommon } from './gql_infra/typesCommon';
 import { sqlResolveFns, connectToSql } from './resolve_funcs/sql/sqlServerResolveFuncs';
 import { testResolveFns } from './resolve_funcs/cached/cachedDataResolveFuncs';
 
-export const logger = new Logger();
-export const typesCommon = new TypesCommon(logger);
-
 const isTestObjects = true;  // false - to use SQL Server
+
+export const logger = new Logger();
+const gqlProvider = new GqlProvider(logger);
+export const typesCommon = new TypesCommon(gqlProvider, logger);
 
 (async function main() {
     const app = express();
 
     app.use('*', cors());
     app.use(compression());
-
-    const gqlProvider = new GqlProvider(logger);
 
     app.use('/graphql', graphqlHTTP({
         schema: gqlProvider.schema,
@@ -64,7 +63,7 @@ const isTestObjects = true;  // false - to use SQL Server
                 fullFieldPath: 'user',
                 type: User,
                 resolveFunc: async (field, args, contextConst, contextVar) =>
-                    await typesCommon.resolveFunc01(gqlProvider, field, args, contextConst, contextVar,
+                    await typesCommon.resolveFunc01(field, args, contextConst, contextVar,
                         resolveFns.fetchData_user)
             },
 
@@ -73,21 +72,21 @@ const isTestObjects = true;  // false - to use SQL Server
                 fullFieldPath: 'myChats',
                 type: Chat,
                 resolveFunc: async (field, args, contextConst, contextVar) =>
-                    await typesCommon.resolveFunc01(gqlProvider, field, args, contextConst, contextVar,
+                    await typesCommon.resolveFunc01(field, args, contextConst, contextVar,
                         resolveFns.fetchData_myChats)
             },
             {
                 fullFieldPath: 'myChats.participants',
                 type: User,
                 resolveFunc: async (field, args, contextConst, contextVar) =>
-                    await typesCommon.resolveFunc01(gqlProvider, field, args, contextConst, contextVar,
+                    await typesCommon.resolveFunc01(field, args, contextConst, contextVar,
                         resolveFns.fetchData_myChats_participants)
             },
             {
                 fullFieldPath: 'myChats.messages',
                 type: ChatMessage,
                 resolveFunc: async (field, args, contextConst, contextVar) =>
-                    await typesCommon.resolveFunc01(gqlProvider, field, args, contextConst, contextVar,
+                    await typesCommon.resolveFunc01(field, args, contextConst, contextVar,
                         resolveFns.fetchData_myChats_messages)
             },
             {
@@ -102,7 +101,7 @@ const isTestObjects = true;  // false - to use SQL Server
                     contextVar[`${fieldName1}${TypesCommon.suffixArray}`] = new Array<any>();
 
                     for (let k = 0; k < grandParents.length; k++)
-                        await typesCommon.resolveFunc01(gqlProvider, field, args, contextConst, contextVar,
+                        await typesCommon.resolveFunc01(field, args, contextConst, contextVar,
                             resolveFns.fetchData_myChats_messages_author);
 
                     TypesCommon.filterObject(fieldName1, contextVar);
