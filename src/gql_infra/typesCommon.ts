@@ -14,7 +14,7 @@ export class TypesCommon {
         const level = field.arrPath.length - 1;
         if (level > 1 && currentLevel < level - 1) {
             const fieldName = field.arrPath[currentLevel];
-            const parents = contextVar[`${fieldName}-${currentLevel}`][fieldName];
+            const parents = contextVar[`${fieldName}`][0][0][fieldName];
             for (let i = 0; i < parents.length; i++)
                 await this.resolveFunc(field, args, contextConst, contextVar, queryFn, currentLevel + 1);
         }
@@ -23,17 +23,20 @@ export class TypesCommon {
             const type = this.gql.findRegisteredType(field.typeName);
             this.logger.log(`common resolveFunc for ${fullFieldPath}`);
 
-            let count = 0;
-            let parentsObj: any;
             const fieldName = level === 0 ? fullFieldPath : field.arrPath[level - 1];
 
-            if (level === 0)
-                contextVar[`${fieldName}-${count}`] = { };
+            const arrParentsObj = contextVar[`${fieldName}`]?.[0];
+            const n0 = _.isNil(arrParentsObj) || arrParentsObj.length === 0 ? 1 : arrParentsObj.length;
 
-            while (!_.isNil(parentsObj = contextVar[`${fieldName}-${count}`])) {
-                let parents = parentsObj[fieldName];
-                const levelFieldName = field.arrPath[level];
+            const levelFieldName = field.arrPath[level];
+
+            const arrOuter = new Array<any>();
+            for (let k = 0; k < n0; k++) {
+                const parentsObj = _.isNil(arrParentsObj) ? undefined : arrParentsObj[k];
+                let parents = _.isNil(parentsObj) ? undefined : parentsObj[fieldName];
+
                 const n = _.isNil(parents) || parents.length === 0 ? 1 : parents.length;
+                const arr = new Array<any>();
                 for (let i = 0; i < n; i++) {
                     const parent: any = _.isNil(parents) ? { } : parents[i];
 
@@ -53,12 +56,15 @@ export class TypesCommon {
 
                     contextVar[`${fieldName}${TypesCommon.suffixArray}`]?.push(parent);
 
-                    contextVar[`${levelFieldName}-${i}`] = { };
-                    contextVar[`${levelFieldName}-${i}`][levelFieldName] = parent[levelFieldName];
+                    let obj: any = { };
+                    obj[levelFieldName] = parent[levelFieldName];
+                    arr.push(obj);
                 }
 
-                count++;
+                arrOuter.push(arr);
             }
+
+            contextVar[`${levelFieldName}`] = arrOuter;
         }
     }
 
