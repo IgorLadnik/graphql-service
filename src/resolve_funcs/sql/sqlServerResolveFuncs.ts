@@ -52,7 +52,7 @@ export const sqlResolveFns = {
                                                      parent: any): Promise<Array<any>> => {
         console.log('fetchData_myChats_messages() - sql');
         const query = 'SELECT id, text, authorId FROM ChatMessages WHERE chatId = ${parent.id}';
-        contextVar['ChatMessage_properties'] = ['text', 'authorId'];
+        contextVar[`ChatMessage${TypesCommon.suffixPropsFilter}`] = ['text', 'authorId'];
         return await sqlResolveFns.fetchFromDb(query, contextConst, parent);
     },
 

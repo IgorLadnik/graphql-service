@@ -101,7 +101,7 @@ const isTestObjects = false;  // false - to use SQL Server
                     contextVar[`${fieldName1}${TypesCommon.suffixPropsFilter}`] = ['text', 'author'];
                     contextVar[`${fieldName1}${TypesCommon.suffixArray}`] = new Array<any>();
 
-                    for (let  k = 0; k < grandParents.length; k++)
+                    for (let k = 0; k < grandParents.length; k++)
                         await typesCommon.resolveFunc01(gqlProvider, field, args, contextConst, contextVar,
                             resolveFns.fetchData_myChats_messages_author);
 

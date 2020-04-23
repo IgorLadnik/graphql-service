@@ -33,7 +33,6 @@ export class TypesCommon {
                 const items = await queryFn(field, args, contextConst, contextVar, parent);
 
                 parent[levelFieldName] = new Array<any>();
-                contextVar[levelFieldName] = new Array<any>();
                 items.forEach((item: any) => {
                     const dataName = `${type.type}${TypesCommon.suffixData}`;
                     contextVar[dataName] = item;
