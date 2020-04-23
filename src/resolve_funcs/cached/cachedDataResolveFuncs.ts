@@ -12,14 +12,14 @@ export const users = [
 ];
 
 export const chatMessages = [
-    { type: 'ChatMessage', id: 1, content: 'text1', time: Date.parse('2020-04-07'), authorId: 3, chatId: 2 },
-    { type: 'ChatMessage', id: 2, content: 'text2', time: Date.parse('2020-04-07'), authorId: 2, chatId: 1 },
-    { type: 'ChatMessage', id: 3, content: 'text3', time: Date.parse('2020-04-07'), authorId: 1, chatId: 3 },
-    { type: 'ChatMessage', id: 4, content: 'text4', time: Date.parse('2020-04-07'), authorId: 7, chatId: 1 },
-    { type: 'ChatMessage', id: 5, content: 'text5', time: Date.parse('2020-04-07'), authorId: 5, chatId: 3 },
-    { type: 'ChatMessage', id: 6, content: 'text6', time: Date.parse('2020-04-07'), authorId: 4, chatId: 4 },
-    { type: 'ChatMessage', id: 7, content: 'text7', time: Date.parse('2020-04-07'), authorId: 1, chatId: 1 },
-    { type: 'ChatMessage', id: 8, content: 'text8', time: Date.parse('2020-04-07'), authorId: 4, chatId: 5 },
+    { type: 'ChatMessage', id: 1, text: 'text1', time: Date.parse('2020-04-07'), authorId: 3, chatId: 2 },
+    { type: 'ChatMessage', id: 2, text: 'text2', time: Date.parse('2020-04-07'), authorId: 2, chatId: 1 },
+    { type: 'ChatMessage', id: 3, text: 'text3', time: Date.parse('2020-04-07'), authorId: 1, chatId: 3 },
+    { type: 'ChatMessage', id: 4, text: 'text4', time: Date.parse('2020-04-07'), authorId: 7, chatId: 1 },
+    { type: 'ChatMessage', id: 5, text: 'text5', time: Date.parse('2020-04-07'), authorId: 5, chatId: 3 },
+    { type: 'ChatMessage', id: 6, text: 'text6', time: Date.parse('2020-04-07'), authorId: 4, chatId: 4 },
+    { type: 'ChatMessage', id: 7, text: 'text7', time: Date.parse('2020-04-07'), authorId: 1, chatId: 1 },
+    { type: 'ChatMessage', id: 8, text: 'text8', time: Date.parse('2020-04-07'), authorId: 4, chatId: 5 },
 ];
 
 export const chats = [
@@ -81,6 +81,7 @@ export const testResolveFns = {
                                                           parent: any): Promise<Array<any>> => {
         console.log('fetchData_myChats_messages() - cached');
         contextVar['ChatMessage_properties'] = ['text', 'authorId'];
+        const ret = await testResolveFns.getObjects(chatMessages, 'chatId', [parent.id]);
         return await testResolveFns.getObjects(chatMessages, 'chatId', [parent.id]);
     },
 
