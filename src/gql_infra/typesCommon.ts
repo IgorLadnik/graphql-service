@@ -31,34 +31,34 @@ export class TypesCommon {
                 contextVar[`${fieldName}-${count}`] = { };
 
             while (!_.isNil(parentsObj = contextVar[`${fieldName}-${count}`])) {
-            let parents = parentsObj[fieldName];
-            const levelFieldName = field.arrPath[level];
-            const n = _.isNil(parents) || parents.length === 0 ? 1 : parents.length;
-            for (let i = 0; i < n; i++) {
-                const parent: any = _.isNil(parents) ? { } : parents[i];
+                let parents = parentsObj[fieldName];
+                const levelFieldName = field.arrPath[level];
+                const n = _.isNil(parents) || parents.length === 0 ? 1 : parents.length;
+                for (let i = 0; i < n; i++) {
+                    const parent: any = _.isNil(parents) ? { } : parents[i];
 
-                const items = await queryFn(field, args, contextConst, contextVar, parent);
+                    const items = await queryFn(field, args, contextConst, contextVar, parent);
 
-                parent[levelFieldName] = new Array<any>();
-                items.forEach((item: any) => {
-                    const dataName = `${type.type}${TypesCommon.suffixData}`;
-                    contextVar[dataName] = item;
-                    type.resolveFunc(field, args, contextConst, contextVar);
-                    const updatedItem = contextVar[dataName];
-                    if (field.isArray)
-                        parent[levelFieldName].push(updatedItem);
-                    else
-                        parent[levelFieldName] = updatedItem;
-                });
+                    parent[levelFieldName] = new Array<any>();
+                    items.forEach((item: any) => {
+                        const dataName = `${type.type}${TypesCommon.suffixData}`;
+                        contextVar[dataName] = item;
+                        type.resolveFunc(field, args, contextConst, contextVar);
+                        const updatedItem = contextVar[dataName];
+                        if (field.isArray)
+                            parent[levelFieldName].push(updatedItem);
+                        else
+                            parent[levelFieldName] = updatedItem;
+                    });
 
-                contextVar[`${fieldName}${TypesCommon.suffixArray}`]?.push(parent);
+                    contextVar[`${fieldName}${TypesCommon.suffixArray}`]?.push(parent);
 
-                contextVar[`${levelFieldName}-${i}`] = { };
-                contextVar[`${levelFieldName}-${i}`][levelFieldName] = parent[levelFieldName];
+                    contextVar[`${levelFieldName}-${i}`] = { };
+                    contextVar[`${levelFieldName}-${i}`][levelFieldName] = parent[levelFieldName];
+                }
+
+                count++;
             }
-
-            count++;
-        }
         }
     }
 
