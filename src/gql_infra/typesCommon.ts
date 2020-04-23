@@ -3,6 +3,10 @@ import { IGqlProvider, GqlProvider, FieldDescription } from './gqlProvider';
 import _ from 'lodash';
 
 export class TypesCommon {
+    static readonly suffixData = '_data';
+    static readonly suffixPropsFilter = '_properties_filter';
+    static readonly suffixArray = '_array';
+
     constructor(private logger: ILogger) { }
 
     resolveFunc01 = async (gql: IGqlProvider, field: any, args: any, contextConst: any, contextVar: any,
@@ -31,7 +35,7 @@ export class TypesCommon {
                 parent[levelFieldName] = new Array<any>();
                 contextVar[levelFieldName] = new Array<any>();
                 items.forEach((item: any) => {
-                    const dataName = `${type.type}_data`;
+                    const dataName = `${type.type}${TypesCommon.suffixData}`;
                     contextVar[dataName] = item;
                     type.resolveFunc(field, args, contextConst, contextVar);
                     const updatedItem = contextVar[dataName];
@@ -41,7 +45,7 @@ export class TypesCommon {
                         parent[levelFieldName] = updatedItem;
                 });
 
-                contextVar[`${fieldName}_array`]?.push(parent);
+                contextVar[`${fieldName}${TypesCommon.suffixArray}`]?.push(parent);
 
                 contextVar[`${levelFieldName}-${i}`] = { };
                 contextVar[`${levelFieldName}-${i}`][levelFieldName] = parent[levelFieldName];
@@ -52,8 +56,8 @@ export class TypesCommon {
     }
 
     filter = (typeName: string, contextVar: any) => {
-        const strData = `${typeName}_data`;
-        const strProperties = `${typeName}_properties`;
+        const strData = `${typeName}${TypesCommon.suffixData}`;
+        const strProperties = `${typeName}${TypesCommon.suffixPropsFilter}`;
         const inObj = contextVar[strData];
         if (_.isNil(inObj))
             return;
@@ -74,8 +78,8 @@ export class TypesCommon {
     }
 
     static filterObject = (fieldName: string, contextVar: any) => {
-        const properties = contextVar[`${fieldName}_properties`];
-        const arr = contextVar[`${fieldName}_array`];
+        const properties = contextVar[`${fieldName}${TypesCommon.suffixPropsFilter}`];
+        const arr = contextVar[`${fieldName}${TypesCommon.suffixArray}`];
         if (properties?.length === 0 || arr?.length === 0)
             return;
 
@@ -105,5 +109,6 @@ export class TypesCommon {
         field.children.map((c: FieldDescription) => c.fieldName);
 
     static updateFieldTypeFilter = (field: FieldDescription, contextVar: any) =>
-        contextVar[`${field.typeName}_properties`] = field.children.map((c: FieldDescription) => c.fieldName);
+        contextVar[`${field.typeName}${TypesCommon.suffixPropsFilter}`] =
+            field.children.map((c: FieldDescription) => c.fieldName);
 }

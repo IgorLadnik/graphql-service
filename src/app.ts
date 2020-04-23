@@ -13,7 +13,7 @@ import { testResolveFns } from './resolve_funcs/cached/cachedDataResolveFuncs';
 export const logger = new Logger();
 export const typesCommon = new TypesCommon(logger);
 
-const isTestObjects = true;  // false - to use SQL Server
+const isTestObjects = false;  // false - to use SQL Server
 
 (async function main() {
     const app = express();
@@ -98,8 +98,8 @@ const isTestObjects = true;  // false - to use SQL Server
                     const fieldName1 = field.arrPath[1];
 
                     const grandParents = gqlProvider.contextVar[`${fieldName0}-0`][fieldName0];
-                    contextVar[`${fieldName1}_properties`] = ['text', 'author'];
-                    contextVar[`${fieldName1}_array`] = new Array<any>();
+                    contextVar[`${fieldName1}${TypesCommon.suffixPropsFilter}`] = ['text', 'author'];
+                    contextVar[`${fieldName1}${TypesCommon.suffixArray}`] = new Array<any>();
 
                     for (let  k = 0; k < grandParents.length; k++)
                         await typesCommon.resolveFunc01(gqlProvider, field, args, contextConst, contextVar,
