@@ -10,7 +10,7 @@ export class TypesCommon {
     constructor(private gql: IGqlProvider, private logger: ILogger) { }
 
     resolveFunc = async (field: any, args: any, contextConst: any, contextVar: any,
-                           queryFn: Function, currentLevel: number = 0): Promise<void> => {
+                         queryFn: Function, currentLevel: number = 0): Promise<void> => {
         const level = field.arrPath.length - 1;
         if (level > 1 && currentLevel < level - 1) {
             const fieldName = field.arrPath[currentLevel];
@@ -24,24 +24,21 @@ export class TypesCommon {
             this.logger.log(`common resolveFunc for ${fullFieldPath}`);
 
             const fieldName = level === 0 ? fullFieldPath : field.arrPath[level - 1];
-
             const arrParentsObj = contextVar[`${fieldName}`]?.[0];
-            const n0 = _.isNil(arrParentsObj) || arrParentsObj.length === 0 ? 1 : arrParentsObj.length;
-
             const levelFieldName = field.arrPath[level];
-
             const arrOuter = new Array<any>();
 
             // Levels loop
-            for (let i = 0; i < n0; i++) {
+            const iMax = _.isNil(arrParentsObj) || arrParentsObj.length === 0 ? 1 : arrParentsObj.length;
+            for (let i = 0; i < iMax; i++) {
                 const parentsObj = _.isNil(arrParentsObj) ? undefined : arrParentsObj[i];
                 let parents = _.isNil(parentsObj) ? undefined : parentsObj[fieldName];
 
-                const n = _.isNil(parents) || parents.length === 0 ? 1 : parents.length;
                 const arr = new Array<any>();
 
                 // Properties loop
-                for (let j = 0; j < n; j++) {
+                const jMax = _.isNil(parents) || parents.length === 0 ? 1 : parents.length;
+                for (let j = 0; j < jMax; j++) {
                     const parent: any = _.isNil(parents) ? { } : parents[j];
 
                     const items = await queryFn(field, args, contextConst, contextVar, parent);
@@ -50,9 +47,11 @@ export class TypesCommon {
                     items.forEach((item: any) => {
                         const dataName = `${type.type}${TypesCommon.suffixData}`;
                         contextVar[dataName] = item;
+
                         type.resolveFunc(field, args, contextConst, contextVar);
+
                         const updatedItem = contextVar[dataName];
-                        //delete contextVar[dataName]; //??
+                        delete contextVar[dataName];
 
                         if (field.isArray)
                             parent[levelFieldName].push(updatedItem);
