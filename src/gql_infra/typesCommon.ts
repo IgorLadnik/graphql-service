@@ -31,14 +31,18 @@ export class TypesCommon {
             const levelFieldName = field.arrPath[level];
 
             const arrOuter = new Array<any>();
-            for (let k = 0; k < n0; k++) {
-                const parentsObj = _.isNil(arrParentsObj) ? undefined : arrParentsObj[k];
+
+            // Levels loop
+            for (let i = 0; i < n0; i++) {
+                const parentsObj = _.isNil(arrParentsObj) ? undefined : arrParentsObj[i];
                 let parents = _.isNil(parentsObj) ? undefined : parentsObj[fieldName];
 
                 const n = _.isNil(parents) || parents.length === 0 ? 1 : parents.length;
                 const arr = new Array<any>();
-                for (let i = 0; i < n; i++) {
-                    const parent: any = _.isNil(parents) ? { } : parents[i];
+
+                // Properties loop
+                for (let j = 0; j < n; j++) {
+                    const parent: any = _.isNil(parents) ? { } : parents[j];
 
                     const items = await queryFn(field, args, contextConst, contextVar, parent);
 
@@ -48,6 +52,8 @@ export class TypesCommon {
                         contextVar[dataName] = item;
                         type.resolveFunc(field, args, contextConst, contextVar);
                         const updatedItem = contextVar[dataName];
+                        //delete contextVar[dataName]; //??
+
                         if (field.isArray)
                             parent[levelFieldName].push(updatedItem);
                         else
