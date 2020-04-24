@@ -82,7 +82,6 @@ export const testResolveFns = {
                                                           parent: any): Promise<Array<any>> => {
         logger.log('fetchData_myChats_messages() - cached');
         contextVar[`ChatMessage${TypesCommon.suffixPropsFilter}`] = ['text', 'authorId'];
-        const ret = await testResolveFns.getObjects(chatMessages, 'chatId', [parent.id]);
         return await testResolveFns.getObjects(chatMessages, 'chatId', [parent.id]);
     },
 
