@@ -23,7 +23,7 @@ export const typesCommon = new TypesCommon(gqlProvider, logger);
     app.use(compression());
 
     app.use('/graphql', graphqlHTTP({
-        schema: gqlProvider.schema,
+        schema: gqlProvider.schema,  // schema stub
         graphiql: true,
 
         customExecuteFn: async (args: ExecutionArgs): Promise<any> =>

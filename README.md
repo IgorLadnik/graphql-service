@@ -14,7 +14,9 @@ The schema restricts inbound queries.
 
 The main goal of the project is to make GQL Web server as flexible as possible.
 To achieve this, first we need to allow any formally valid GQL query.
-So, in contrast to normal GQL usage, the project does not use GQL schema and therefore is open to any inbound GQL query.
+So, in contrast to normal GQL usage, the project does not use GQL schema 
+(to be precise, a meaningless schema stub is used to satisfy **graphqlHTTP** GQL infrastructure object)
+and therefore is open to any inbound GQL query.
 This is attained with implementation of hook methods of **graphqlHTTP** object (please see details below).
 These methods block usage of the schema, but at the same time deny standard way for parsing and resolve functions call.
 So, custom mechanism for parsing and call of resolve functions is implemented.
@@ -40,7 +42,7 @@ File *types.ts* contains types objects.
 In order to be able to process any query hook functions of **graphqlHTTP** are intercepted:  
  
 	app.use('/graphql', graphqlHTTP({
-	  schema: gqlProvider.schema,
+	  schema: gqlProvider.schema, // schema stub
 	  graphiql: true,
 
 	  customExecuteFn: async (args: ExecutionArgs): Promise<any> =>
