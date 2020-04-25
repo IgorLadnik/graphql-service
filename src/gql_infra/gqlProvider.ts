@@ -168,7 +168,8 @@ export class GqlProvider implements IGqlProvider {
     }
 
     private setUpmostFieldType = (fieldName: string) =>
-        this.pushToActionTree(this.actionTree, fieldName, [fieldName], this.field.type.type, true)
+        this.pushToActionTree(this.actionTree, fieldName, [fieldName],
+                              GqlProvider.getObjType(this.field.type), true)
 
     private setGeneralFieldType = (fullFieldPath: string) => {
         this.arrPath = fullFieldPath.split(GqlProvider.pathDelim);
@@ -185,7 +186,7 @@ export class GqlProvider implements IGqlProvider {
             if (!_.isNil(field)) {
                 const isArray = _.isArray(field);
                 const obj = isArray ? field[0] : field;
-                const type = _.isNil(obj.type) ? typeof obj : obj.type;
+                const type = GqlProvider.getObjType(obj);
                 this.pushToActionTree(parent.children, fieldName, this.arrPath, type, isArray);
             }
             else
@@ -203,6 +204,9 @@ export class GqlProvider implements IGqlProvider {
             args: this.args,
             children: new Array<FieldDescription>()
         })
+
+    private static getObjType = (obj: any): string =>
+        _.isNil(obj.type) ? typeof(obj) : obj.type;
 
     // Recursive
     private getParent = (obj: any): any => {
