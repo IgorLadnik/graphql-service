@@ -92,7 +92,8 @@ export class GqlProvider implements IGqlProvider {
                 this.logger.log('-- Execution Trace -------------------------------');
                 try {
                     await this.executeActionTree(this.actionTree);
-                } catch (err) {
+                }
+                catch (err) {
                     this.handleError(`*** Error on executeActionTree: ${err}`);
                 }
 
@@ -158,7 +159,8 @@ export class GqlProvider implements IGqlProvider {
                 }
                 else
                     this.setGeneralFieldType(fullFieldPath);
-            } catch (err) {
+            }
+            catch (err) {
                 this.handleError(`*** Error on set field type for field \"${fieldName}\". ${err}`);
                 return;
             }
