@@ -13,14 +13,14 @@ export const users = [
 ];
 
 export const chatMessages = [
-    { type: 'ChatMessage', id: 1, text: 'text1', time: Date.parse('2020-04-07'), authorId: 3, chatId: 2 },
-    { type: 'ChatMessage', id: 2, text: 'text2', time: Date.parse('2020-04-07'), authorId: 2, chatId: 1 },
-    { type: 'ChatMessage', id: 3, text: 'text3', time: Date.parse('2020-04-07'), authorId: 1, chatId: 3 },
-    { type: 'ChatMessage', id: 4, text: 'text4', time: Date.parse('2020-04-07'), authorId: 7, chatId: 1 },
-    { type: 'ChatMessage', id: 5, text: 'text5', time: Date.parse('2020-04-07'), authorId: 5, chatId: 3 },
-    { type: 'ChatMessage', id: 6, text: 'text6', time: Date.parse('2020-04-07'), authorId: 4, chatId: 4 },
-    { type: 'ChatMessage', id: 7, text: 'text7', time: Date.parse('2020-04-07'), authorId: 1, chatId: 1 },
-    { type: 'ChatMessage', id: 8, text: 'text8', time: Date.parse('2020-04-07'), authorId: 4, chatId: 5 },
+    { type: 'ChatMessage', id: 1, text: 'text1', time: '2020-04-07', authorId: 3, chatId: 2 },
+    { type: 'ChatMessage', id: 2, text: 'text2', time: '2020-04-07', authorId: 2, chatId: 1 },
+    { type: 'ChatMessage', id: 3, text: 'text3', time: '2020-04-07', authorId: 1, chatId: 3 },
+    { type: 'ChatMessage', id: 4, text: 'text4', time: '2020-04-07', authorId: 7, chatId: 1 },
+    { type: 'ChatMessage', id: 5, text: 'text5', time: '2020-04-07', authorId: 5, chatId: 3 },
+    { type: 'ChatMessage', id: 6, text: 'text6', time: '2020-04-07', authorId: 4, chatId: 4 },
+    { type: 'ChatMessage', id: 7, text: 'text7', time: '2020-04-07', authorId: 1, chatId: 1 },
+    { type: 'ChatMessage', id: 8, text: 'text8', time: '2020-04-07', authorId: 4, chatId: 5 },
 ];
 
 export const chats = [
@@ -81,14 +81,12 @@ export const testResolveFns = {
     fetchData_myChats_messages: async (field: any, args: any, contextConst: any, contextVar: any,
                                                           parent: any): Promise<Array<any>> => {
         logger.log('fetchData_myChats_messages() - cached');
-        contextVar[`ChatMessage${TypesCommon.suffixPropsFilter}`] = ['text', 'authorId'];
         return await testResolveFns.getObjects(chatMessages, 'chatId', [parent.id]);
     },
 
     fetchData_myChats_messages_author: async (field: any, args: any, contextConst: any, contextVar: any,
                                                                  parent: any): Promise<Array<any>> => {
         logger.log('fetchData_myChats_messages_author() - cached');
-        TypesCommon.updateFieldTypeFilter(field, contextVar);
         return await testResolveFns.getObjects(users, 'id', [parent.authorId]);
     }
 }

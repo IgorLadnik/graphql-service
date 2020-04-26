@@ -86,7 +86,7 @@ export const sqlResolveFns = {
             contextVar[cxtKey] = await sqlResolveFns.fetchFromDb(query, contextConst, parent);
         }
 
-        contextVar[`ChatMessage${TypesCommon.suffixPropsFilter}`] = ['text', 'authorId', 'chatId'];
+        TypesCommon.setFilter('ChatMessage', ['id', 'text', 'time', 'authorId', 'chatId'], contextVar);
 
         const items = contextVar[cxtKey];
         return _.filter(items, (item: any) => item.chatId === parent.id);
