@@ -123,7 +123,7 @@ There two main issues, namely,
 Both are fundamental problems of GQL. 
 
 On the first problem, for relational database reduction in number of database queries may be achieved with 
-a "broader" SQL query with inner joining followed by in-memory separating of its result.    
+a "broader" SQL query with inner joining followed by in-memory separating of its result. 
 This approach is illustrated in the code.
 
 The second one may be addressed with some classification of queries.
