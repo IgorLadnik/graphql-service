@@ -29,28 +29,28 @@ export const sqlResolveFns = {
         return await sqlResolveFns.fetchFromDb(query, contextConst, parent);
     },
 
-    fetchData_myChats: async (field: any, args: any, contextConst: any, contextVar: any,
+    fetchData_personChats: async (field: any, args: any, contextConst: any, contextVar: any,
                               parent: any): Promise<Array<any>> => {
-        logger.log('fetchData_myChats() - sql');
-        logger.log('fetchData_myChats() - sql - actual access to database');
+        logger.log('fetchData_personChats() - sql');
+        logger.log('fetchData_personChats() - sql - actual access to database');
 
         TypesCommon.updateFieldTypeFilter(field, contextVar); //?
         const query = `SELECT * FROM Chats WHERE id in
                                      (SELECT chatId FROM Participants WHERE userId in
-                                        (SELECT id FROM Users WHERE name = 'Rachel'))`;
+                                        (SELECT id FROM Users WHERE name = '${args.personName}'))`;
         const retVal = await sqlResolveFns.fetchFromDb(query, contextConst, parent);
         contextVar['_level0_chats'] = retVal;
         return retVal;
     },
 
-    fetchData_myChats_participants: async (field: any, args: any, contextConst: any, contextVar: any,
+    fetchData_personChats_participants: async (field: any, args: any, contextConst: any, contextVar: any,
                                            parent: any): Promise<Array<any>> => {
-        logger.log('fetchData_myChats_participants() - sql');
+        logger.log('fetchData_personChats_participants() - sql');
 
         const cxtKey = '_level1_participants';
         if (_.isNil(contextVar[cxtKey])) {
             // Fetching data from database on the 1st call only
-            logger.log('fetchData_myChats_participants() - sql - actual access to database');
+            logger.log('fetchData_personChats_participants() - sql - actual access to database');
 
             TypesCommon.updateFieldTypeFilter(field, contextVar);
             const queryArgs = TypesCommon.getQueryArgs(field);
@@ -69,14 +69,14 @@ export const sqlResolveFns = {
         return _.filter(items, (item: any) => item.chatId === parent.id)
     },
 
-    fetchData_myChats_messages: async (field: any, args: any, contextConst: any, contextVar: any,
+    fetchData_personChats_messages: async (field: any, args: any, contextConst: any, contextVar: any,
                                        parent: any): Promise<Array<any>> => {
-        logger.log('fetchData_myChats_messages() - sql');
+        logger.log('fetchData_personChats_messages() - sql');
 
         const cxtKey = '_level1_messages';
         if (_.isNil(contextVar[cxtKey])) {
             // Fetching data from database on the 1st call only
-            logger.log('fetchData_myChats_messages() - sql - actual access to database');
+            logger.log('fetchData_personChats_messages() - sql - actual access to database');
 
             TypesCommon.updateFieldTypeFilter(field, contextVar);
             const queryArgs = TypesCommon.getQueryArgs(field);
@@ -92,14 +92,14 @@ export const sqlResolveFns = {
         return _.filter(items, (item: any) => item.chatId === parent.id);
     },
 
-    fetchData_myChats_messages_author: async (field: any, args: any, contextConst: any, contextVar: any,
+    fetchData_personChats_messages_author: async (field: any, args: any, contextConst: any, contextVar: any,
                                               parent: any): Promise<Array<any>> => {
-        logger.log('fetchData_myChats_messages_author() - sql');
+        logger.log('fetchData_personChats_messages_author() - sql');
 
         const cxtKey = '_level2_messages_author';
         if (_.isNil(contextVar[cxtKey])) {
             // Fetching data from database on the 1st call only
-            logger.log('fetchData_myChats_messages_author() - sql - actual access to database');
+            logger.log('fetchData_personChats_messages_author() - sql - actual access to database');
 
             TypesCommon.updateFieldTypeFilter(field, contextVar);
             const queryArgs = TypesCommon.getQueryArgs(field);

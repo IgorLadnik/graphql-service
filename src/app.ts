@@ -69,38 +69,38 @@ export const typesCommon = new TypesCommon(gqlProvider, logger);
 
             //-----------------------------------------------------------------------
             {
-                fullFieldPath: 'myChats',
+                fullFieldPath: 'personChats',
                 type: Chat,
                 resolveFunc: async (field, args, contextConst, contextVar) =>
                     await typesCommon.resolveFunc(field, args, contextConst, contextVar,
-                        resolveFns.fetchData_myChats)
+                        resolveFns.fetchData_personChats)
             },
             {
-                fullFieldPath: 'myChats.participants',
+                fullFieldPath: 'personChats.participants',
                 type: User,
                 resolveFunc: async (field, args, contextConst, contextVar) =>
                     await typesCommon.resolveFunc(field, args, contextConst, contextVar,
-                        resolveFns.fetchData_myChats_participants)
+                        resolveFns.fetchData_personChats_participants)
             },
             {
-                fullFieldPath: 'myChats.messages',
+                fullFieldPath: 'personChats.messages',
                 type: ChatMessage,
                 resolveFunc: async (field, args, contextConst, contextVar) => {
                     const filterArgs = field.children.map((c: any) => c.fieldName);
                     TypesCommon.setFilter(field.fieldName, filterArgs, contextVar);
 
                     await typesCommon.resolveFunc(field, args, contextConst, contextVar,
-                        resolveFns.fetchData_myChats_messages);
+                        resolveFns.fetchData_personChats_messages);
                 }
             },
             {
-                fullFieldPath: 'myChats.messages.author',
+                fullFieldPath: 'personChats.messages.author',
                 type: User,
                 resolveFunc: async (field, args, contextConst, contextVar) => {
                     const fieldName = field.arrPath[1];
 
                     await typesCommon.resolveFunc(field, args, contextConst, contextVar,
-                        resolveFns.fetchData_myChats_messages_author);
+                        resolveFns.fetchData_personChats_messages_author);
 
                     TypesCommon.applyFilter(fieldName, contextVar);
                 }
@@ -120,7 +120,7 @@ query {
 }
 
 query {
-  myChats {
+  personChats(personName: "Rachel") {
     id
     participants {
         name
