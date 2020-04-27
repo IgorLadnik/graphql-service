@@ -7,7 +7,7 @@ export const users = [
     { type: 'User', id: 2, name: 'Avi',     email: 'avi@a.com',      role: Role.User  },
     { type: 'User', id: 3, name: 'Zeev',    email: 'zeev@a.com',     role: Role.User  },
     { type: 'User', id: 4, name: 'Anat',    email: 'anat@a.com',     role: Role.Admin },
-    { type: 'User', id: 5, name: 'Menchem', email: 'menachem@a.com', role: Role.User  },
+    { type: 'User', id: 5, name: 'Menachem', email: 'menachem@a.com', role: Role.User  },
     { type: 'User', id: 6, name: 'Yossi',   email: 'yossi@a.com',    role: Role.User  },
     { type: 'User', id: 7, name: 'Rachel',  email: 'rachel@a.com',   role: Role.User  },
 ];
