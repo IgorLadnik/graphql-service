@@ -5,7 +5,7 @@ import graphqlHTTP from 'express-graphql';
 import { GqlProvider, FieldDescription } from './gql_infra/gqlProvider';
 import { ExecutionArgs, GraphQLError } from 'graphql';
 import { Logger } from './logger';
-import { User, ChatMessage, Chat, Role } from './types/types';
+import {User, ChatMessage, Chat, Role, ClassChat} from './types/types';
 import { TypesCommon } from './gql_infra/typesCommon';
 import { sqlResolveFns, connectToSql } from './resolve_funcs/sql/sqlServerResolveFuncs';
 import { testResolveFns } from './resolve_funcs/cached/cachedDataResolveFuncs';
@@ -54,6 +54,8 @@ export const typesCommon = new TypesCommon(gqlProvider, logger);
         gqlProvider.contextConst['sql'] = await connectToSql(logger);
     }
 
+    let y = new Array<ClassChat>();
+
     // Settings for gqlProvider.
     // Placed after start listening for test purposes.
     gqlProvider
@@ -61,7 +63,7 @@ export const typesCommon = new TypesCommon(gqlProvider, logger);
         .registerResolvedFields(
     {
                 fullFieldPath: 'user',
-                type: User,
+                type: User, // required for topmost fields only
                 resolveFunc: async (field, args, contextConst, contextVar) =>
                     await typesCommon.resolveFunc(field, args, contextConst, contextVar,
                         resolveFns.fetchData_user)
@@ -70,21 +72,19 @@ export const typesCommon = new TypesCommon(gqlProvider, logger);
             //-----------------------------------------------------------------------
             {
                 fullFieldPath: 'personChats',
-                type: Chat,
+                type: [Chat], // required for topmost fields only
                 resolveFunc: async (field, args, contextConst, contextVar) =>
                     await typesCommon.resolveFunc(field, args, contextConst, contextVar,
                         resolveFns.fetchData_personChats)
             },
             {
                 fullFieldPath: 'personChats.participants',
-                type: User,
                 resolveFunc: async (field, args, contextConst, contextVar) =>
                     await typesCommon.resolveFunc(field, args, contextConst, contextVar,
                         resolveFns.fetchData_personChats_participants)
             },
             {
                 fullFieldPath: 'personChats.messages',
-                type: ChatMessage,
                 resolveFunc: async (field, args, contextConst, contextVar) => {
                     const filterArgs = field.children.map((c: any) => c.fieldName);
                     TypesCommon.setFilter(field.fieldName, filterArgs, contextVar);
@@ -95,7 +95,6 @@ export const typesCommon = new TypesCommon(gqlProvider, logger);
             },
             {
                 fullFieldPath: 'personChats.messages.author',
-                type: User,
                 resolveFunc: async (field, args, contextConst, contextVar) => {
                     const fieldName = field.arrPath[1];
 

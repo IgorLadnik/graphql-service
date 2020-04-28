@@ -66,20 +66,36 @@ Then type objects of domain entities (file *types.ts*) and resolve functions sho
       .registerTypes(User, ChatMessage, Chat)
       .registerResolvedFields(
         {
-          fullFieldPath: 'user',
-          type: User,
-          resolveFunc: async (field, args, contextConst, contextVar) =>
-                await typesCommon.resolveFunc(field, args, contextConst, contextVar, 
-                                              resolveFns.fetchData_user)
+            fullFieldPath: 'user',
+            type: User, // required for topmost fields only
+            resolveFunc: async (field, args, contextConst, contextVar) =>
+                await typesCommon.resolveFunc(field, args, contextConst, contextVar,
+                    resolveFns.fetchData_user)
+        },           
+        {
+            fullFieldPath: 'personChats',
+            type: [Chat], // required for topmost fields only
+            resolveFunc: async (field, args, contextConst, contextVar) =>
+                await typesCommon.resolveFunc(field, args, contextConst, contextVar,
+                    resolveFns.fetchData_personChats)
+        },
+        {
+            fullFieldPath: 'personChats.participants',
+            resolveFunc: async (field, args, contextConst, contextVar) =>
+                await typesCommon.resolveFunc(field, args, contextConst, contextVar,
+                    resolveFns.fetchData_personChats_participants)
         },
         {
           //.....
         }
       );
 		
-In registered resolved field the same type is also provided for the case when the function produces array of this type.
-E.g., type **User** should be assigned in both cases when resolve function produces either **User** or **User[]**. 
-		
+In registered resolved field provides full path to the field and the field resolve function.
+In addition, topmost field should provide its output type as an dummy object of appropriate type (please see file *types.ts*).
+E.g., object **User** represents type **ClassUser**.
+When field output type is array, then *type* property is assigned to an array with the appropriate type dummy object 
+as the array first member, e.g., array **[Chat]** for type **Array&lt;ClassChat&gt;**.      
+	
 ## Query Parsing
 
 Usage of the above hooks implies custom parsing of GQL queries.

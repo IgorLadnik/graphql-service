@@ -13,8 +13,13 @@ export interface ContextMap {
     [property: string]: any;
 }
 
-export type Field = { fullFieldPath: string, type: any, resolveFunc: ResolveFunction };
+export type Field = {
+    fullFieldPath: string,
+    type?: any, // required for topmost fields only
+    resolveFunc: ResolveFunction };
+
 export type ResolveFunction = (field: any, args: any, contextConst: any, contextVar: any) => void;
+
 export type FieldDescription = {
     fieldName: string,
     arrPath: Array<string>,
@@ -152,7 +157,7 @@ export class GqlProvider implements IGqlProvider {
             try {
                 if (prevPath.length == 0) {
                     if (!_.isNil(this.field?.type))
-                        this.setUpmostFieldType(fieldName);
+                        this.setUpmostFieldType();
                     else
                         this.handleError(`*** Error on set upmost field type for field \"${fieldName}\". ` +
                                              'Type name is not provided.');
@@ -169,9 +174,14 @@ export class GqlProvider implements IGqlProvider {
         });
     }
 
-    private setUpmostFieldType = (fieldName: string) =>
-        this.pushToActionTree(this.actionTree, fieldName, [fieldName],
-                              GqlProvider.getObjType(this.field.type), true)
+    private setUpmostFieldType = () => {
+        let type = this.field.type;
+        let isArray = _.isArray(type);
+        if (isArray)
+            type = type[0];
+        let fieldName = this.field.fullFieldPath;
+        this.pushToActionTree(this.actionTree, fieldName, [fieldName], type.type, isArray);
+    }
 
     private setGeneralFieldType = (fullFieldPath: string) => {
         this.arrPath = fullFieldPath.split(GqlProvider.pathDelim);
