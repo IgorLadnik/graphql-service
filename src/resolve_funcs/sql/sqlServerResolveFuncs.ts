@@ -22,31 +22,52 @@ export async function connectToSql (logger: ILogger): Promise<any> {
 export const sqlResolveFns = {
     fetchData_user: async (field: any, args: any, contextConst: any, contextVar: any,
                            parent: any): Promise<Array<any>> => {
-        console.log('fetchData_user() - sql');
-        TypesCommon.updateFieldTypeFilter(field, contextVar);
-        const queryArgs = TypesCommon.getQueryArgs(field);
-        const query = `SELECT ${queryArgs} FROM Users WHERE id = ${args.id}`;
-        return await sqlResolveFns.fetchFromDb(query, contextConst);
+        let retVal: any;
+        const cxtKey = '_level0_user';
+        if (_.isNil(contextVar[cxtKey])) {
+            logger.log('fetchData_user() - sql - actual access to database');
+
+            TypesCommon.updateFieldTypeFilter(field, contextVar);
+            const queryArgs = TypesCommon.getQueryArgs(field);
+            const query = `SELECT ${queryArgs} FROM Users WHERE id = ${args.id}`;
+            contextVar[cxtKey] = await sqlResolveFns.fetchFromDb(query, contextConst);
+        }
+        else {
+            logger.log('fetchData_user() - sql');
+
+            if (!_.isNil(parent))
+                retVal = contextVar[cxtKey];
+        }
+
+        return retVal;
     },
 
     fetchData_personChats: async (field: any, args: any, contextConst: any, contextVar: any,
                                   parent: any): Promise<Array<any>> => {
-        logger.log('fetchData_personChats() - sql');
-        logger.log('fetchData_personChats() - sql - actual access to database');
+        let retVal: any;
+        const cxtKey = '_level0_chats';
+        if (_.isNil(contextVar[cxtKey])) {
+            logger.log('fetchData_personChats() - sql - actual access to database');
 
-        TypesCommon.updateFieldTypeFilter(field, contextVar); //?
-        const query = `SELECT * FROM Chats WHERE id in
+            TypesCommon.updateFieldTypeFilter(field, contextVar);
+            const query = `SELECT * FROM Chats WHERE id in
                                      (SELECT chatId FROM Participants WHERE userId in
                                         (SELECT id FROM Users WHERE name = '${args.personName}'))`;
-        const retVal = await sqlResolveFns.fetchFromDb(query, contextConst);
-        contextVar['_level0_chats'] = retVal;
+            contextVar[cxtKey] = await sqlResolveFns.fetchFromDb(query, contextConst);
+        }
+        else {
+            logger.log('fetchData_personChats() - sql');
+
+            if (!_.isNil(parent))
+              retVal = contextVar[cxtKey];
+        }
+
         return retVal;
     },
 
     fetchData_personChats_participants: async (field: any, args: any, contextConst: any, contextVar: any,
                                                parent: any): Promise<Array<any>> => {
-        logger.log('fetchData_personChats_participants() - sql');
-
+        let retVal: any;
         const cxtKey = '_level1_participants';
         if (_.isNil(contextVar[cxtKey])) {
             // Fetching data from database on the 1st call only
@@ -64,15 +85,21 @@ export const sqlResolveFns = {
             `;
             contextVar[cxtKey] = await sqlResolveFns.fetchFromDb(query, contextConst);
         }
+        else {
+            logger.log('fetchData_personChats_participants() - sql');
 
-        const items = contextVar[cxtKey];
-        return _.filter(items, (item: any) => item.chatId === parent.id)
+            if (!_.isNil(parent)) {
+                const items = contextVar[cxtKey];
+                retVal = _.filter(items, (item: any) => item.chatId === parent.id)
+            }
+        }
+
+        return retVal;
     },
 
     fetchData_personChats_messages: async (field: any, args: any, contextConst: any, contextVar: any,
                                            parent: any): Promise<Array<any>> => {
-        logger.log('fetchData_personChats_messages() - sql');
-
+        let retVal: any;
         const cxtKey = '_level1_messages';
         if (_.isNil(contextVar[cxtKey])) {
             // Fetching data from database on the 1st call only
@@ -85,17 +112,23 @@ export const sqlResolveFns = {
             const query = `SELECT * FROM ChatMessages WHERE chatId in (${strChatIds})`;
             contextVar[cxtKey] = await sqlResolveFns.fetchFromDb(query, contextConst);
         }
+        else {
+            logger.log('fetchData_personChats_messages() - sql');
 
-        TypesCommon.setFilter('ChatMessage', ['id', 'text', 'time', 'authorId', 'chatId'], contextVar);
+            if (!_.isNil(parent)) {
+                TypesCommon.setFilter('ChatMessage', ['id', 'text', 'time', 'authorId', 'chatId'], contextVar);
 
-        const items = contextVar[cxtKey];
-        return _.filter(items, (item: any) => item.chatId === parent.id);
+                const items = contextVar[cxtKey];
+                retVal = _.filter(items, (item: any) => item.chatId === parent.id);
+            }
+        }
+
+        return retVal;
     },
 
     fetchData_personChats_messages_author: async (field: any, args: any, contextConst: any, contextVar: any,
                                                   parent: any): Promise<Array<any>> => {
-        logger.log('fetchData_personChats_messages_author() - sql');
-
+        let retVal: any;
         const cxtKey = '_level2_messages_author';
         if (_.isNil(contextVar[cxtKey])) {
             // Fetching data from database on the 1st call only
@@ -108,9 +141,16 @@ export const sqlResolveFns = {
             const query = `SELECT id, ${queryArgs} FROM Users WHERE id in (${strAuthorIds})`;
             contextVar[cxtKey] = await sqlResolveFns.fetchFromDb(query, contextConst);
         }
+        else {
+            logger.log('fetchData_personChats_messages_author() - sql');
 
-        const items = contextVar[cxtKey];
-        return _.filter(items, (item: any) => item.id === parent.authorId);
+            if (!_.isNil(parent)) {
+                const items = contextVar[cxtKey];
+                retVal = _.filter(items, (item: any) => item.id === parent.authorId);
+            }
+        }
+
+        return retVal;
     },
 
     fetchFromDb: async (query: string, contextConst: any): Promise<Array<any>> =>

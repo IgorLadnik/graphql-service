@@ -19,6 +19,9 @@ export class TypesCommon {
                 await this.resolveFunc(field, args, contextConst, contextVar, queryFn, currentLevel + 1);
         }
         else {
+            // Fetching data from storage on a level - access to database
+            await queryFn(field, args, contextConst, contextVar, null);
+
             const fullFieldPath = GqlProvider.composeFullFieldPath(field.arrPath);
             const type = this.gql.findRegisteredType(field.typeName);
             this.logger.log(`common resolveFunc for ${fullFieldPath}`);
@@ -33,7 +36,6 @@ export class TypesCommon {
             for (let i = 0; i < iMax; i++) {
                 const parentsObj = _.isNil(arrParentsObj) ? undefined : arrParentsObj[i];
                 let parents = _.isNil(parentsObj) ? undefined : parentsObj[fieldName];
-
                 const arr = new Array<any>();
 
                 // Properties loop
