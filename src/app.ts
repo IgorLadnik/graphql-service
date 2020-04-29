@@ -7,10 +7,10 @@ import { ExecutionArgs, GraphQLError } from 'graphql';
 import { Logger } from './logger';
 import {User, ChatMessage, Chat, Role, ClassChat} from './types/types';
 import { TypesCommon } from './gql_infra/typesCommon';
+import { cachedResolveFns } from './resolve_funcs/cached/cachedDataResolveFuncs';
 import { sqlResolveFns, connectToSql } from './resolve_funcs/sql/sqlServerResolveFuncs';
-import { testResolveFns } from './resolve_funcs/cached/cachedDataResolveFuncs';
 
-const isTestObjects = true;  // false - to use SQL Server
+const isCachedObjects = true;  // false - to use SQL Server
 
 export const logger = new Logger();
 const gqlProvider = new GqlProvider(logger);
@@ -47,14 +47,12 @@ export const typesCommon = new TypesCommon(gqlProvider, logger);
     }
 
     let resolveFns: any;
-    if (isTestObjects)
-        resolveFns = testResolveFns;
+    if (isCachedObjects)
+        resolveFns = cachedResolveFns;
     else {
         resolveFns = sqlResolveFns;
         gqlProvider.contextConst['sql'] = await connectToSql(logger);
     }
-
-    let y = new Array<ClassChat>();
 
     // Settings for gqlProvider.
     // Placed after start listening for test purposes.

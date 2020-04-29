@@ -43,7 +43,7 @@ export const participants = [
     { id: 9, chatId: 5, userId: 7 },
 ]
 
-export const testResolveFns = {
+export const cachedResolveFns = {
     getObjects: async (arr: Array<any>, propertyName: string, arrId: Array<any>): Promise<Array<any>> => {
         const results = new Array<any>();
         arr.forEach((p: any) => {
@@ -58,38 +58,38 @@ export const testResolveFns = {
                                               parent: any): Promise<Array<any>> => {
         logger.log('fetchData_user() - cached');
         TypesCommon.updateFieldTypeFilter(field, contextVar);
-        return await testResolveFns.getObjects(users, 'id', [args.id]);
+        return await cachedResolveFns.getObjects(users, 'id', [args.id]);
     },
 
     fetchData_personChats: async (field: any, args: any, contextConst: any, contextVar: any,
                                                  parent: any): Promise<Array<any>> => {
         logger.log('fetchData_personChats() - cached');
         TypesCommon.updateFieldTypeFilter(field, contextVar); //?
-        const u = (await testResolveFns.getObjects(users, 'name', [args.personName]))[0];
-        const ps = await testResolveFns.getObjects(participants, 'userId', [u.id]);
-        return await testResolveFns.getObjects(chats, 'id', ps.map((p: any) => p.chatId));
+        const u = (await cachedResolveFns.getObjects(users, 'name', [args.personName]))[0];
+        const ps = await cachedResolveFns.getObjects(participants, 'userId', [u.id]);
+        return await cachedResolveFns.getObjects(chats, 'id', ps.map((p: any) => p.chatId));
     },
 
     fetchData_personChats_participants: async (field: any, args: any, contextConst: any, contextVar: any,
                                                               parent: any): Promise<Array<any>> => {
         logger.log('fetchData_personChats_participants() - cached');
         TypesCommon.updateFieldTypeFilter(field, contextVar);
-        const ps = await testResolveFns.getObjects(participants, 'chatId', [parent.id]);
-        return await testResolveFns.getObjects(users, 'id', ps.map((p: any) => p.userId));
+        const ps = await cachedResolveFns.getObjects(participants, 'chatId', [parent.id]);
+        return await cachedResolveFns.getObjects(users, 'id', ps.map((p: any) => p.userId));
     },
 
     fetchData_personChats_messages: async (field: any, args: any, contextConst: any, contextVar: any,
                                        parent: any): Promise<Array<any>> => {
         logger.log('fetchData_personChats_messages() - cached');
         contextVar[`ChatMessage${TypesCommon.suffixPropsFilter}`] = ['text', 'time', 'authorId'];
-        const ret = await testResolveFns.getObjects(chatMessages, 'chatId', [parent.id]);
-        return await testResolveFns.getObjects(chatMessages, 'chatId', [parent.id]);
+        const ret = await cachedResolveFns.getObjects(chatMessages, 'chatId', [parent.id]);
+        return await cachedResolveFns.getObjects(chatMessages, 'chatId', [parent.id]);
     },
 
     fetchData_personChats_messages_author: async (field: any, args: any, contextConst: any, contextVar: any,
                                               parent: any): Promise<Array<any>> => {
         logger.log('fetchData_personChats_messages_author() - cached');
         TypesCommon.updateFieldTypeFilter(field, contextVar);
-        return await testResolveFns.getObjects(users, 'id', [parent.authorId]);
+        return await cachedResolveFns.getObjects(users, 'id', [parent.authorId]);
     }
 }
