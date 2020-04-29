@@ -21,16 +21,16 @@ export async function connectToSql (logger: ILogger): Promise<any> {
 
 export const sqlResolveFns = {
     fetchData_user: async (field: any, args: any, contextConst: any, contextVar: any,
-                                         parent: any): Promise<Array<any>> => {
+                           parent: any): Promise<Array<any>> => {
         console.log('fetchData_user() - sql');
         TypesCommon.updateFieldTypeFilter(field, contextVar);
         const queryArgs = TypesCommon.getQueryArgs(field);
         const query = `SELECT ${queryArgs} FROM Users WHERE id = ${args.id}`;
-        return await sqlResolveFns.fetchFromDb(query, contextConst, parent);
+        return await sqlResolveFns.fetchFromDb(query, contextConst);
     },
 
     fetchData_personChats: async (field: any, args: any, contextConst: any, contextVar: any,
-                              parent: any): Promise<Array<any>> => {
+                                  parent: any): Promise<Array<any>> => {
         logger.log('fetchData_personChats() - sql');
         logger.log('fetchData_personChats() - sql - actual access to database');
 
@@ -38,13 +38,13 @@ export const sqlResolveFns = {
         const query = `SELECT * FROM Chats WHERE id in
                                      (SELECT chatId FROM Participants WHERE userId in
                                         (SELECT id FROM Users WHERE name = '${args.personName}'))`;
-        const retVal = await sqlResolveFns.fetchFromDb(query, contextConst, parent);
+        const retVal = await sqlResolveFns.fetchFromDb(query, contextConst);
         contextVar['_level0_chats'] = retVal;
         return retVal;
     },
 
     fetchData_personChats_participants: async (field: any, args: any, contextConst: any, contextVar: any,
-                                           parent: any): Promise<Array<any>> => {
+                                               parent: any): Promise<Array<any>> => {
         logger.log('fetchData_personChats_participants() - sql');
 
         const cxtKey = '_level1_participants';
@@ -62,7 +62,7 @@ export const sqlResolveFns = {
                 ON Users.id = Participants.userId
                 WHERE Participants.chatId in (${strChatIds})
             `;
-            contextVar[cxtKey] = await sqlResolveFns.fetchFromDb(query, contextConst, parent);
+            contextVar[cxtKey] = await sqlResolveFns.fetchFromDb(query, contextConst);
         }
 
         const items = contextVar[cxtKey];
@@ -70,7 +70,7 @@ export const sqlResolveFns = {
     },
 
     fetchData_personChats_messages: async (field: any, args: any, contextConst: any, contextVar: any,
-                                       parent: any): Promise<Array<any>> => {
+                                           parent: any): Promise<Array<any>> => {
         logger.log('fetchData_personChats_messages() - sql');
 
         const cxtKey = '_level1_messages';
@@ -83,7 +83,7 @@ export const sqlResolveFns = {
 
             const strChatIds = contextVar['_level0_chats']?.map((c: any) => c.id)?.toString();
             const query = `SELECT * FROM ChatMessages WHERE chatId in (${strChatIds})`;
-            contextVar[cxtKey] = await sqlResolveFns.fetchFromDb(query, contextConst, parent);
+            contextVar[cxtKey] = await sqlResolveFns.fetchFromDb(query, contextConst);
         }
 
         TypesCommon.setFilter('ChatMessage', ['id', 'text', 'time', 'authorId', 'chatId'], contextVar);
@@ -93,7 +93,7 @@ export const sqlResolveFns = {
     },
 
     fetchData_personChats_messages_author: async (field: any, args: any, contextConst: any, contextVar: any,
-                                              parent: any): Promise<Array<any>> => {
+                                                  parent: any): Promise<Array<any>> => {
         logger.log('fetchData_personChats_messages_author() - sql');
 
         const cxtKey = '_level2_messages_author';
@@ -106,13 +106,13 @@ export const sqlResolveFns = {
 
             const strAuthorIds = contextVar['_level1_messages'].map((m: any) => m.authorId).toString();
             const query = `SELECT id, ${queryArgs} FROM Users WHERE id in (${strAuthorIds})`;
-            contextVar[cxtKey] = await sqlResolveFns.fetchFromDb(query, contextConst, parent);
+            contextVar[cxtKey] = await sqlResolveFns.fetchFromDb(query, contextConst);
         }
 
         const items = contextVar[cxtKey];
         return _.filter(items, (item: any) => item.id === parent.authorId);
     },
 
-    fetchFromDb: async (query: string, contextConst: any, parent: any): Promise<Array<any>> =>
-        await contextConst['sql'].query(TypesCommon.tuneQueryString(query, parent))
+    fetchFromDb: async (query: string, contextConst: any): Promise<Array<any>> =>
+        await contextConst['sql'].query(query)
 }

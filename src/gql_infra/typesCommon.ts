@@ -112,22 +112,6 @@ export class TypesCommon {
                     delete arr[i][objProperty];
     }
 
-    static tuneQueryString = (query: string, parent: any): string => {
-        let result = query;
-        const tokenized = query.split('${', 10);
-        tokenized.forEach((str: string) => {
-            const index = str.indexOf('}');
-            if (index > -1) {
-                const toBeReplaced = str.substring(0, index);
-                const someId = toBeReplaced.split('.')[1];
-                const val = parent[`${someId}`];
-                result = result.replace('${' + `${toBeReplaced}` + '}', `${val}`);
-            }
-        });
-
-        return result;
-    }
-
     static getQueryArgs = (field: FieldDescription): Array<string> =>
         field.children.map((c: FieldDescription) => c.fieldName);
 
