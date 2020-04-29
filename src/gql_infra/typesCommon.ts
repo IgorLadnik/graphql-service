@@ -32,45 +32,53 @@ export class TypesCommon {
             const arrOuter = new Array<any>();
 
             // Levels loop
+            let promisesLevel = new Array<Promise<void>>();
             const iMax = _.isNil(arrParentsObj) || arrParentsObj.length === 0 ? 1 : arrParentsObj.length;
             for (let i = 0; i < iMax; i++) {
-                const parentsObj = _.isNil(arrParentsObj) ? undefined : arrParentsObj[i];
-                let parents = _.isNil(parentsObj) ? undefined : parentsObj[fieldName];
-                const arr = new Array<any>();
+                promisesLevel.push((async (): Promise<void> => {
+                    const parentsObj = _.isNil(arrParentsObj) ? undefined : arrParentsObj[i];
+                    let parents = _.isNil(parentsObj) ? undefined : parentsObj[fieldName];
+                    const arr = new Array<any>();
 
-                // Properties loop
-                const jMax = _.isNil(parents) || parents.length === 0 ? 1 : parents.length;
-                for (let j = 0; j < jMax; j++) {
-                    const parent: any = _.isNil(parents) ? { } : parents[j];
+                    // Properties loop
+                    let promisesProp = new Array<Promise<void>>();
+                    const jMax = _.isNil(parents) || parents.length === 0 ? 1 : parents.length;
+                    for (let j = 0; j < jMax; j++) {
+                        promisesProp.push((async (): Promise<void> => {
+                            const parent: any = _.isNil(parents) ? { } : parents[j];
 
-                    const items = await queryFn(field, args, contextConst, contextVar, parent);
+                            const items = await queryFn(field, args, contextConst, contextVar, parent);
 
-                    parent[levelFieldName] = new Array<any>();
-                    items.forEach((item: any) => {
-                        const dataName = `${type.type}${TypesCommon.suffixData}`;
-                        contextVar[dataName] = item;
+                            parent[levelFieldName] = new Array<any>();
+                            items.forEach((item: any) => {
+                                const dataName = `${type.type}${TypesCommon.suffixData}`;
+                                contextVar[dataName] = item;
 
-                        type.resolveFunc(field, args, contextConst, contextVar);
+                                type.resolveFunc(field, args, contextConst, contextVar);
 
-                        const updatedItem = contextVar[dataName];
-                        delete contextVar[dataName];
+                                const updatedItem = contextVar[dataName];
+                                delete contextVar[dataName];
 
-                        if (field.isArray)
-                            parent[levelFieldName].push(updatedItem);
-                        else
-                            parent[levelFieldName] = updatedItem;
-                    });
+                                if (field.isArray)
+                                    parent[levelFieldName].push(updatedItem);
+                                else
+                                    parent[levelFieldName] = updatedItem;
+                            });
 
-                    contextVar[`${fieldName}${TypesCommon.suffixArray}`]?.push(parent);
+                            contextVar[`${fieldName}${TypesCommon.suffixArray}`]?.push(parent);
 
-                    let obj: any = { };
-                    obj[levelFieldName] = parent[levelFieldName];
-                    arr.push(obj);
-                }
+                            let obj: any = { };
+                            obj[levelFieldName] = parent[levelFieldName];
+                            arr.push(obj);
+                        })());
+                    }
 
-                arrOuter.push(arr);
+                    await Promise.all(promisesProp);
+                    arrOuter.push(arr);
+                })());
             }
 
+            await Promise.all(promisesLevel);
             contextVar[`${levelFieldName}`] = arrOuter;
         }
     }
