@@ -21,13 +21,29 @@ export async function connectToSql (logger: ILogger): Promise<any> {
 }
 
 export const sqlResolveFns = {
-    fetchData_user: async (field: any, args: any, contextConst: any, contextVar: any,
+    //-- Queries ----------------------------------------------------------------------------
+
+    fetchFromDb: async (query: string, contextConst: any): Promise<Array<any>> =>
+        await contextConst['sql'].query(query),
+
+    query_dummy: async (field: any, args: any, contextConst: any, contextVar: any,
+                            parent: any): Promise<Array<any>> => {
+        let retVal: any;
+        if (!_.isNil(parent)) {
+            logger.log(`${contextVar[Utils.handlerIdPrefix]}query_dummy() - sql`);
+
+        }
+
+        return retVal;
+    },
+
+    query_user: async (field: any, args: any, contextConst: any, contextVar: any,
                            parent: any): Promise<Array<any>> => {
         let retVal: any;
         const callerId = `${contextVar[Utils.handlerIdPrefix]}`;
         const cxtKey = '_level0_user';
         if (_.isNil(contextVar[cxtKey])) {
-            logger.log(`${callerId}fetchData_user() - sql - actual access to database`);
+            logger.log(`${callerId}query_user() - sql - actual access to database`);
 
             GqlTypesCommon.updateFieldTypeFilter(field, contextVar);
             const queryArgs = GqlTypesCommon.getQueryArgs(field);
@@ -35,7 +51,7 @@ export const sqlResolveFns = {
             contextVar[cxtKey] = await sqlResolveFns.fetchFromDb(query, contextConst);
         }
         else {
-            logger.log(`${callerId}fetchData_user() - sql`);
+            logger.log(`${callerId}query_user() - sql`);
 
             if (!_.isNil(parent))
                 retVal = contextVar[cxtKey];
@@ -44,13 +60,13 @@ export const sqlResolveFns = {
         return retVal;
     },
 
-    fetchData_personChats: async (field: any, args: any, contextConst: any, contextVar: any,
+    query_personChats: async (field: any, args: any, contextConst: any, contextVar: any,
                                   parent: any): Promise<Array<any>> => {
         let retVal: any;
         const callerId = `${contextVar[Utils.handlerIdPrefix]}`;
         const cxtKey = '_level0_chats';
         if (_.isNil(contextVar[cxtKey])) {
-            logger.log(`${callerId}fetchData_personChats() - sql - actual access to database`);
+            logger.log(`${callerId}query_personChats() - sql - actual access to database`);
 
             GqlTypesCommon.updateFieldTypeFilter(field, contextVar);
             const query = `SELECT * FROM Chats WHERE id in
@@ -59,7 +75,7 @@ export const sqlResolveFns = {
             contextVar[cxtKey] = await sqlResolveFns.fetchFromDb(query, contextConst);
         }
         else {
-            logger.log(`${callerId}fetchData_personChats() - sql`);
+            logger.log(`${callerId}query_personChats() - sql`);
 
             if (!_.isNil(parent))
               retVal = contextVar[cxtKey];
@@ -68,14 +84,14 @@ export const sqlResolveFns = {
         return retVal;
     },
 
-    fetchData_personChats_participants: async (field: any, args: any, contextConst: any, contextVar: any,
+    query_personChats_participants: async (field: any, args: any, contextConst: any, contextVar: any,
                                                parent: any): Promise<Array<any>> => {
         let retVal: any;
         const callerId = `${contextVar[Utils.handlerIdPrefix]}`;
         const cxtKey = '_level1_participants';
         if (_.isNil(contextVar[cxtKey])) {
             // Fetching data from database on the 1st call only
-            logger.log(`${callerId}fetchData_personChats_participants() - sql - actual access to database`);
+            logger.log(`${callerId}query_personChats_participants() - sql - actual access to database`);
 
             GqlTypesCommon.updateFieldTypeFilter(field, contextVar);
             const queryArgs = GqlTypesCommon.getQueryArgs(field);
@@ -90,7 +106,7 @@ export const sqlResolveFns = {
             contextVar[cxtKey] = await sqlResolveFns.fetchFromDb(query, contextConst);
         }
         else {
-            logger.log(`${callerId}fetchData_personChats_participants() - sql`);
+            logger.log(`${callerId}query_personChats_participants() - sql`);
 
             if (!_.isNil(parent)) {
                 const items = contextVar[cxtKey];
@@ -101,14 +117,14 @@ export const sqlResolveFns = {
         return retVal;
     },
 
-    fetchData_personChats_messages: async (field: any, args: any, contextConst: any, contextVar: any,
+    query_personChats_messages: async (field: any, args: any, contextConst: any, contextVar: any,
                                            parent: any): Promise<Array<any>> => {
         let retVal: any;
         const callerId = `${contextVar[Utils.handlerIdPrefix]}`;
         const cxtKey = '_level1_messages';
         if (_.isNil(contextVar[cxtKey])) {
             // Fetching data from database on the 1st call only
-            logger.log(`${callerId}fetchData_personChats_messages() - sql - actual access to database`);
+            logger.log(`${callerId}query_personChats_messages() - sql - actual access to database`);
 
             GqlTypesCommon.updateFieldTypeFilter(field, contextVar);
             const queryArgs = GqlTypesCommon.getQueryArgs(field);
@@ -118,7 +134,7 @@ export const sqlResolveFns = {
             contextVar[cxtKey] = await sqlResolveFns.fetchFromDb(query, contextConst);
         }
         else {
-            logger.log(`${callerId}fetchData_personChats_messages() - sql`);
+            logger.log(`${callerId}query_personChats_messages() - sql`);
 
             if (!_.isNil(parent)) {
                 GqlTypesCommon.setFilter('ChatMessage', ['id', 'text', 'time', 'authorId', 'chatId'], contextVar);
@@ -131,14 +147,14 @@ export const sqlResolveFns = {
         return retVal;
     },
 
-    fetchData_personChats_messages_author: async (field: any, args: any, contextConst: any, contextVar: any,
+    query_personChats_messages_author: async (field: any, args: any, contextConst: any, contextVar: any,
                                                   parent: any): Promise<Array<any>> => {
         let retVal: any;
         const callerId = `${contextVar[Utils.handlerIdPrefix]}`;
         const cxtKey = '_level2_messages_author';
         if (_.isNil(contextVar[cxtKey])) {
             // Fetching data from database on the 1st call only
-            logger.log(`${callerId}fetchData_personChats_messages_author() - sql - actual access to database`);
+            logger.log(`${callerId}query_personChats_messages_author() - sql - actual access to database`);
 
             GqlTypesCommon.updateFieldTypeFilter(field, contextVar);
             const queryArgs = GqlTypesCommon.getQueryArgs(field);
@@ -148,7 +164,7 @@ export const sqlResolveFns = {
             contextVar[cxtKey] = await sqlResolveFns.fetchFromDb(query, contextConst);
         }
         else {
-            logger.log(`${callerId}fetchData_personChats_messages_author() - sql`);
+            logger.log(`${callerId}query_personChats_messages_author() - sql`);
 
             if (!_.isNil(parent)) {
                 const items = contextVar[cxtKey];
@@ -159,6 +175,18 @@ export const sqlResolveFns = {
         return retVal;
     },
 
-    fetchFromDb: async (query: string, contextConst: any): Promise<Array<any>> =>
-        await contextConst['sql'].query(query)
+    //-- Mutations ----------------------------------------------------------------------------
+
+    mutation_dummy: async (field: any, args: any, contextConst: any, contextVar: any,
+                           parent: any): Promise<Array<any>> => {
+        let retVal: any;
+        const callerId = `${contextVar[Utils.handlerIdPrefix]}`;
+        logger.log(`${callerId}mutation_dummy() - sql`);
+
+        if (!_.isNil(args)) {
+            logger.log(`${callerId}args = ${JSON.stringify(args)}`);
+        }
+
+        return args;
+    },
 }

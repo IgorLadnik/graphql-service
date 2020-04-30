@@ -59,27 +59,28 @@ export const gqlTypesCommon = new GqlTypesCommon(gqlProvider, logger);
     gqlProvider
         .registerTypes(User, ChatMessage, Chat)
         .registerResolvedFields(
-    {
+            //-- user ---------------------------------------------------------------
+            {
                 fullFieldPath: 'user',
                 type: User, // required for topmost fields only
                 resolveFunc: async (field, args, contextConst, contextVar) =>
-                    await gqlTypesCommon.resolveFunc(field, args, contextConst, contextVar,
-                                                     resolveFns.fetchData_user)
+                    await gqlTypesCommon.resolveQuery(field, args, contextConst, contextVar,
+                                                      resolveFns.query_user)
             },
 
-            //-----------------------------------------------------------------------
+            //-- personChats --------------------------------------------------------
             {
                 fullFieldPath: 'personChats',
                 type: [Chat], // required for topmost fields only
                 resolveFunc: async (field, args, contextConst, contextVar) =>
-                    await gqlTypesCommon.resolveFunc(field, args, contextConst, contextVar,
-                                                     resolveFns.fetchData_personChats)
+                    await gqlTypesCommon.resolveQuery(field, args, contextConst, contextVar,
+                                                      resolveFns.query_personChats)
             },
             {
                 fullFieldPath: 'personChats.participants',
                 resolveFunc: async (field, args, contextConst, contextVar) =>
-                    await gqlTypesCommon.resolveFunc(field, args, contextConst, contextVar,
-                                                     resolveFns.fetchData_personChats_participants)
+                    await gqlTypesCommon.resolveQuery(field, args, contextConst, contextVar,
+                                                      resolveFns.query_personChats_participants)
             },
             {
                 fullFieldPath: 'personChats.messages',
@@ -87,8 +88,8 @@ export const gqlTypesCommon = new GqlTypesCommon(gqlProvider, logger);
                     const filterArgs = field.children.map((c: any) => c.fieldName);
                     GqlTypesCommon.setFilter(field.fieldName, filterArgs, contextVar);
 
-                    await gqlTypesCommon.resolveFunc(field, args, contextConst, contextVar,
-                                                     resolveFns.fetchData_personChats_messages);
+                    await gqlTypesCommon.resolveQuery(field, args, contextConst, contextVar,
+                                                      resolveFns.query_personChats_messages);
                 }
             },
             {
@@ -96,39 +97,61 @@ export const gqlTypesCommon = new GqlTypesCommon(gqlProvider, logger);
                 resolveFunc: async (field, args, contextConst, contextVar) => {
                     const fieldName = field.arrPath[1];
 
-                    await gqlTypesCommon.resolveFunc(field, args, contextConst, contextVar,
-                                                     resolveFns.fetchData_personChats_messages_author);
+                    await gqlTypesCommon.resolveQuery(field, args, contextConst, contextVar,
+                                                      resolveFns.query_personChats_messages_author);
 
                     GqlTypesCommon.applyFilter(fieldName, contextVar);
                 }
-            }
+            },
+
+            //-- addMessaqe ---------------------------------------------------------
+            {
+                fullFieldPath: 'addMessage',
+                type: ChatMessage, // required for topmost fields only
+                resolveFunc: async (field, args, contextConst, contextVar) =>
+                    await gqlTypesCommon.resolveMutation(field, args, contextConst, contextVar,
+                                                         resolveFns.mutation_dummy)
+            },
+
             //-----------------------------------------------------------------------
         );
 })();
 
 
-/* Queries
+/* Requests
 
-query {
+query TheQuery {
+  personChats(personName: "Rachel") {
+    id
+    topic
+    participants {
+      name
+      email
+    }
+    messages {
+      author {
+        name
+       	role
+      }
+      text
+      time
+    }
+  }
+
   user(id: 1) {
     name
-    id
+    email
+    role
   }
 }
 
-query {
-  personChats(personName: "Rachel") {
-    id
-    participants {
-        name
-    }
-    messages {
-        author {
-            name
-        }
-        text
-    }
-  }
+mutation TheMutation {
+  addMessage(
+    chat: "topic2",
+    text: "some text",
+    time: "2020-04-10"
+    author: "Zeev"
+  )
 }
 
 */

@@ -46,9 +46,6 @@ export class GqlRequestHandler {
 
     private readonly logPrefix: string = `** ${this.id} **  `;
 
-    private operation = Operation.none;
-    private operationName: string;
-
     constructor(
         private id: string,
         private gqlProvider: IGqlProvider,
@@ -66,9 +63,11 @@ export class GqlRequestHandler {
 
         this.contextVar[Utils.handlerIdPrefix] = this.logPrefix;
 
+        let operation = Operation.none;
+        let operationName: string = '';
         if (inboundObj.kind === 'OperationDefinition') {
-            this.operation = GqlRequestHandler.getOperation(inboundObj.operation);
-            this.operationName = inboundObj.name.value;
+            operation = GqlRequestHandler.getOperation(inboundObj.operation);
+            operationName = inboundObj.name?.value;
         }
 
         // Parsing inbound query to obtain "this.actionTree"
@@ -97,8 +96,15 @@ export class GqlRequestHandler {
                 }
 
                 if (this.isErrorsFree()) {
-                    this.actionTree.forEach((item: any) => results.push(this.contextVar[`${item.fieldName}`][0][0]));
-                    output = GqlRequestHandler.createOutput(results, 'data');
+                    this.actionTree.forEach((item: any) => {
+                        let a = this.contextVar[item.fieldName];
+                        if (operation === Operation.query)
+                            a = a[0][0];
+                        results.push(a)
+                    });
+
+                    output = GqlRequestHandler.createOutput(results,
+                                              operationName?.length > 0 ? operationName : 'data');
                 }
             }
         }

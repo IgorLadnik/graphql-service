@@ -11,14 +11,14 @@ export class GqlTypesCommon {
 
     constructor(private gql: IGqlProvider, private logger: ILogger) { }
 
-    resolveFunc = async (field: any, args: any, contextConst: any, contextVar: any,
-                         queryFn: Function, currentLevel: number = 0): Promise<void> => {
+    resolveQuery = async (field: any, args: any, contextConst: any, contextVar: any,
+                          queryFn: Function, currentLevel: number = 0): Promise<void> => {
         const level = field.arrPath.length - 1;
         if (level > 1 && currentLevel < level - 1) {
             const fieldName = field.arrPath[currentLevel];
             const parents = contextVar[`${fieldName}`][0][0][fieldName];
             for (let i = 0; i < parents.length; i++)
-                await this.resolveFunc(field, args, contextConst, contextVar, queryFn, currentLevel + 1);
+                await this.resolveQuery(field, args, contextConst, contextVar, queryFn, currentLevel + 1);
         }
         else {
             // Fetching data from storage on a level - access to database
@@ -81,8 +81,17 @@ export class GqlTypesCommon {
             }
 
             await Promise.all(promisesLevel);
-            contextVar[`${levelFieldName}`] = arrOuter;
+            contextVar[levelFieldName] = arrOuter;
         }
+    }
+
+    resolveMutation = async (field: any, args: any, contextConst: any, contextVar: any,
+                             mutationFn: Function, currentLevel: number = 0): Promise<void> => {
+        const level = field.arrPath.length - 1;
+        const fullFieldPath = Utils.composeFullFieldPath(field.arrPath);
+        const items = await mutationFn(field, args, contextConst, contextVar, null);
+        const levelFieldName = field.arrPath[level];
+        contextVar[levelFieldName] = items;
     }
 
     filter = (typeName: string, contextVar: any) => {
