@@ -42,7 +42,8 @@ export const gqlTypesCommon = new GqlTypesCommon(gqlProvider, logger);
     try {
         await app.listen(port);
         logger.log(`\n--- GraphQL schemaless service is listening on ${address}`);
-    } catch (err) {
+    }
+    catch (err) {
         logger.log(`\n*** Error to listen on ${address}. ${err}`)
     }
 

@@ -69,25 +69,34 @@ Then type objects of domain entities (file *types.ts*) and resolve functions sho
             fullFieldPath: 'user',
             type: User, // required for topmost fields only
             resolveFunc: async (field, args, contextConst, contextVar) =>
-                await typesCommon.resolveFunc(field, args, contextConst, contextVar,
-                    resolveFns.fetchData_user)
-        },           
+                await gqlTypesCommon.resolveQuery(field, args, contextConst, contextVar,
+                                                  resolveFns.query_user)
+        },
+
         {
             fullFieldPath: 'personChats',
             type: [Chat], // required for topmost fields only
             resolveFunc: async (field, args, contextConst, contextVar) =>
-                await typesCommon.resolveFunc(field, args, contextConst, contextVar,
-                    resolveFns.fetchData_personChats)
+                await gqlTypesCommon.resolveQuery(field, args, contextConst, contextVar,
+                                                  resolveFns.query_personChats)
         },
         {
             fullFieldPath: 'personChats.participants',
             resolveFunc: async (field, args, contextConst, contextVar) =>
-                await typesCommon.resolveFunc(field, args, contextConst, contextVar,
-                    resolveFns.fetchData_personChats_participants)
+                await gqlTypesCommon.resolveQuery(field, args, contextConst, contextVar,
+                                                  resolveFns.query_personChats_participants)
         },
         {
           //.....
-        }
+        },
+        
+        {
+            fullFieldPath: 'addMessage',
+            type: ChatMessage, // required for topmost fields only
+            resolveFunc: async (field, args, contextConst, contextVar) =>
+                await gqlTypesCommon.resolveMutation(field, args, contextConst, contextVar,
+                                                     resolveFns.mutation_dummy)
+        },       
       );
 		
 In registered resolved field provides full path to the field and the field resolve function.
@@ -126,14 +135,14 @@ It does not affect code execution.
 By default, code runs with "cached" data.
 It may use a local database in stead (to switch we have to change in file *app.ts* value of **isTestObjects** to *false*).
 
-- Simple queries tested so far. No mutations yet.
+- Simple requests tested so far.
 - "Naive" handling of SQL Server with direct SQL queries without any ORM.
 
 # Issues
 
 There two main issues, namely,
 
-- N+1 queries problem meaning multiple data fetching on a single GQL query, and
+- N+1 queries problem in server side meaning multiple data fetching on a single GQL query, and
 - In case of relational database, a complete generalization of resolve functions may not be possible.
 
 Both are fundamental problems of GQL. 
