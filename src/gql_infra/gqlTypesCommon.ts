@@ -1,8 +1,10 @@
-import { ILogger } from '../logger';
-import { IGqlProvider, GqlProvider, FieldDescription } from './gqlProvider';
 import _ from 'lodash';
+import { ILogger } from '../logger';
+import { FieldDescription } from './gqlRequestHandler';
+import { IGqlProvider } from "./gqlProvider";
+import { Utils } from './utils';
 
-export class TypesCommon {
+export class GqlTypesCommon {
     static readonly suffixData = '_data';
     static readonly suffixPropsFilter = '_properties_filter';
     static readonly suffixArray = '_array';
@@ -22,9 +24,9 @@ export class TypesCommon {
             // Fetching data from storage on a level - access to database
             await queryFn(field, args, contextConst, contextVar, null);
 
-            const fullFieldPath = GqlProvider.composeFullFieldPath(field.arrPath);
+            const fullFieldPath = Utils.composeFullFieldPath(field.arrPath);
             const type = this.gql.findRegisteredType(field.typeName);
-            this.logger.log(`common resolveFunc for ${fullFieldPath}`);
+            this.logger.log(`${contextVar[Utils.handlerIdPrefix]}common resolveFunc for ${fullFieldPath}`);
 
             const fieldName = level === 0 ? fullFieldPath : field.arrPath[level - 1];
             const arrParentsObj = contextVar[`${fieldName}`]?.[0];
@@ -51,7 +53,7 @@ export class TypesCommon {
 
                             parent[levelFieldName] = new Array<any>();
                             items.forEach((item: any) => {
-                                const dataName = `${type.type}${TypesCommon.suffixData}`;
+                                const dataName = `${type.type}${GqlTypesCommon.suffixData}`;
                                 contextVar[dataName] = item;
 
                                 type.resolveFunc(field, args, contextConst, contextVar);
@@ -65,7 +67,7 @@ export class TypesCommon {
                                     parent[levelFieldName] = updatedItem;
                             });
 
-                            contextVar[`${fieldName}${TypesCommon.suffixArray}`]?.push(parent);
+                            contextVar[`${fieldName}${GqlTypesCommon.suffixArray}`]?.push(parent);
 
                             let obj: any = { };
                             obj[levelFieldName] = parent[levelFieldName];
@@ -84,16 +86,16 @@ export class TypesCommon {
     }
 
     filter = (typeName: string, contextVar: any) => {
-        const strData = `${typeName}${TypesCommon.suffixData}`;
-        const strProperties = `${typeName}${TypesCommon.suffixPropsFilter}`;
+        const strData = `${typeName}${GqlTypesCommon.suffixData}`;
+        const strProperties = `${typeName}${GqlTypesCommon.suffixPropsFilter}`;
         const inObj = contextVar[strData];
         if (_.isNil(inObj))
             return;
 
         const properties = contextVar[strProperties];
-        const outObj = TypesCommon.filterInner(inObj, properties);
+        const outObj = GqlTypesCommon.filterInner(inObj, properties);
         contextVar[strData] = outObj;
-        this.logger.log(`filter() for type ${typeName}`);
+        this.logger.log(`${contextVar[Utils.handlerIdPrefix]}filter() for type ${typeName}`);
     }
 
     private static filterInner = (objOrg: any, properties: Array<string>): any => {
@@ -106,13 +108,13 @@ export class TypesCommon {
     }
 
     static setFilter = (fieldName: string, arrFilter: Array<string>, contextVar: any) => {
-        contextVar[`${fieldName}${TypesCommon.suffixPropsFilter}`] = arrFilter;
-        contextVar[`${fieldName}${TypesCommon.suffixArray}`] = new Array<any>();
+        contextVar[`${fieldName}${GqlTypesCommon.suffixPropsFilter}`] = arrFilter;
+        contextVar[`${fieldName}${GqlTypesCommon.suffixArray}`] = new Array<any>();
     }
 
     static applyFilter = (fieldName: string, contextVar: any) => {
-        const properties = contextVar[`${fieldName}${TypesCommon.suffixPropsFilter}`];
-        const arr = contextVar[`${fieldName}${TypesCommon.suffixArray}`];
+        const properties = contextVar[`${fieldName}${GqlTypesCommon.suffixPropsFilter}`];
+        const arr = contextVar[`${fieldName}${GqlTypesCommon.suffixArray}`];
         if (properties?.length === 0 || _.isNil(arr) || arr.length === 0)
             return;
 
@@ -126,6 +128,6 @@ export class TypesCommon {
         field.children.map((c: FieldDescription) => c.fieldName);
 
     static updateFieldTypeFilter = (field: FieldDescription, contextVar: any) =>
-        contextVar[`${field.typeName}${TypesCommon.suffixPropsFilter}`] =
+        contextVar[`${field.typeName}${GqlTypesCommon.suffixPropsFilter}`] =
             field.children.map((c: FieldDescription) => c.fieldName);
 }

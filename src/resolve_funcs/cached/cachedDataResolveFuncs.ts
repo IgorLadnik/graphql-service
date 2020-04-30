@@ -1,7 +1,8 @@
 import { Role } from "../../types/types";
-import { TypesCommon } from '../../gql_infra/typesCommon';
+import { GqlTypesCommon } from '../../gql_infra/gqlTypesCommon';
 import { logger } from "../../app";
 import _ from "lodash";
+import { Utils } from '../../gql_infra/utils';
 
 export const users = [
     { type: 'User', id: 1, name: 'Moshe',   email: 'moshe@a.com',    role: Role.Admin },
@@ -59,8 +60,8 @@ export const cachedResolveFns = {
                            parent: any): Promise<Array<any>> => {
         let retVal: any;
         if (!_.isNil(parent)) {
-            logger.log('fetchData_user() - cached');
-            TypesCommon.updateFieldTypeFilter(field, contextVar);
+            logger.log(`${contextVar[Utils.handlerIdPrefix]}fetchData_user() - cached`);
+            GqlTypesCommon.updateFieldTypeFilter(field, contextVar);
             retVal = await cachedResolveFns.getObjects(users, 'id', [args.id]);
         }
 
@@ -71,8 +72,8 @@ export const cachedResolveFns = {
                                   parent: any): Promise<Array<any>> => {
         let retVal: any;
         if (!_.isNil(parent)) {
-            logger.log('fetchData_personChats() - cached');
-            TypesCommon.updateFieldTypeFilter(field, contextVar); //?
+            logger.log(`${contextVar[Utils.handlerIdPrefix]}fetchData_personChats() - cached`);
+            GqlTypesCommon.updateFieldTypeFilter(field, contextVar); //?
             const u = (await cachedResolveFns.getObjects(users, 'name', [args.personName]))[0];
             const ps = await cachedResolveFns.getObjects(participants, 'userId', [u.id]);
             retVal = await cachedResolveFns.getObjects(chats, 'id', ps.map((p: any) => p.chatId));
@@ -85,8 +86,8 @@ export const cachedResolveFns = {
                                                parent: any): Promise<Array<any>> => {
         let retVal: any;
         if (!_.isNil(parent)) {
-            logger.log('fetchData_personChats_participants() - cached');
-            TypesCommon.updateFieldTypeFilter(field, contextVar);
+            logger.log(`${contextVar[Utils.handlerIdPrefix]}fetchData_personChats_participants() - cached`);
+            GqlTypesCommon.updateFieldTypeFilter(field, contextVar);
             const ps = await cachedResolveFns.getObjects(participants, 'chatId', [parent.id]);
             retVal = await cachedResolveFns.getObjects(users, 'id', ps.map((p: any) => p.userId));
         }
@@ -98,8 +99,8 @@ export const cachedResolveFns = {
                                            parent: any): Promise<Array<any>> => {
         let retVal: any;
         if (!_.isNil(parent)) {
-            logger.log('fetchData_personChats_messages() - cached');
-            contextVar[`ChatMessage${TypesCommon.suffixPropsFilter}`] = ['text', 'time', 'authorId'];
+            logger.log(`${contextVar[Utils.handlerIdPrefix]}fetchData_personChats_messages() - cached`);
+            contextVar[`ChatMessage${GqlTypesCommon.suffixPropsFilter}`] = ['text', 'time', 'authorId'];
             const ret = await cachedResolveFns.getObjects(chatMessages, 'chatId', [parent.id]);
             retVal = await cachedResolveFns.getObjects(chatMessages, 'chatId', [parent.id]);
         }
@@ -111,8 +112,8 @@ export const cachedResolveFns = {
                                                   parent: any): Promise<Array<any>> => {
         let retVal: any;
         if (!_.isNil(parent)) {
-            logger.log('fetchData_personChats_messages_author() - cached');
-            TypesCommon.updateFieldTypeFilter(field, contextVar);
+            logger.log(`${contextVar[Utils.handlerIdPrefix]}fetchData_personChats_messages_author() - cached`);
+            GqlTypesCommon.updateFieldTypeFilter(field, contextVar);
             retVal = await cachedResolveFns.getObjects(users, 'id', [parent.authorId]);
         }
 

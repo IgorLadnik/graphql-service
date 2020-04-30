@@ -2,11 +2,11 @@ import express from 'express';
 import compression from 'compression';
 import cors from 'cors';
 import graphqlHTTP from 'express-graphql';
-import { GqlProvider, FieldDescription } from './gql_infra/gqlProvider';
 import { ExecutionArgs, GraphQLError } from 'graphql';
 import { Logger } from './logger';
-import {User, ChatMessage, Chat, Role, ClassChat} from './types/types';
-import { TypesCommon } from './gql_infra/typesCommon';
+import { GqlProvider } from './gql_infra/gqlProvider';
+import { User, ChatMessage, Chat } from './types/types';
+import { GqlTypesCommon } from './gql_infra/gqlTypesCommon';
 import { cachedResolveFns } from './resolve_funcs/cached/cachedDataResolveFuncs';
 import { sqlResolveFns, connectToSql } from './resolve_funcs/sql/sqlServerResolveFuncs';
 
@@ -14,7 +14,7 @@ const isCachedObjects = true;  // false - to use SQL Server
 
 export const logger = new Logger();
 const gqlProvider = new GqlProvider(logger);
-export const typesCommon = new TypesCommon(gqlProvider, logger);
+export const gqlTypesCommon = new GqlTypesCommon(gqlProvider, logger);
 
 (async function main() {
     const app = express();
@@ -63,8 +63,8 @@ export const typesCommon = new TypesCommon(gqlProvider, logger);
                 fullFieldPath: 'user',
                 type: User, // required for topmost fields only
                 resolveFunc: async (field, args, contextConst, contextVar) =>
-                    await typesCommon.resolveFunc(field, args, contextConst, contextVar,
-                        resolveFns.fetchData_user)
+                    await gqlTypesCommon.resolveFunc(field, args, contextConst, contextVar,
+                                                     resolveFns.fetchData_user)
             },
 
             //-----------------------------------------------------------------------
@@ -72,23 +72,23 @@ export const typesCommon = new TypesCommon(gqlProvider, logger);
                 fullFieldPath: 'personChats',
                 type: [Chat], // required for topmost fields only
                 resolveFunc: async (field, args, contextConst, contextVar) =>
-                    await typesCommon.resolveFunc(field, args, contextConst, contextVar,
-                        resolveFns.fetchData_personChats)
+                    await gqlTypesCommon.resolveFunc(field, args, contextConst, contextVar,
+                                                     resolveFns.fetchData_personChats)
             },
             {
                 fullFieldPath: 'personChats.participants',
                 resolveFunc: async (field, args, contextConst, contextVar) =>
-                    await typesCommon.resolveFunc(field, args, contextConst, contextVar,
-                        resolveFns.fetchData_personChats_participants)
+                    await gqlTypesCommon.resolveFunc(field, args, contextConst, contextVar,
+                                                     resolveFns.fetchData_personChats_participants)
             },
             {
                 fullFieldPath: 'personChats.messages',
                 resolveFunc: async (field, args, contextConst, contextVar) => {
                     const filterArgs = field.children.map((c: any) => c.fieldName);
-                    TypesCommon.setFilter(field.fieldName, filterArgs, contextVar);
+                    GqlTypesCommon.setFilter(field.fieldName, filterArgs, contextVar);
 
-                    await typesCommon.resolveFunc(field, args, contextConst, contextVar,
-                        resolveFns.fetchData_personChats_messages);
+                    await gqlTypesCommon.resolveFunc(field, args, contextConst, contextVar,
+                                                     resolveFns.fetchData_personChats_messages);
                 }
             },
             {
@@ -96,10 +96,10 @@ export const typesCommon = new TypesCommon(gqlProvider, logger);
                 resolveFunc: async (field, args, contextConst, contextVar) => {
                     const fieldName = field.arrPath[1];
 
-                    await typesCommon.resolveFunc(field, args, contextConst, contextVar,
-                        resolveFns.fetchData_personChats_messages_author);
+                    await gqlTypesCommon.resolveFunc(field, args, contextConst, contextVar,
+                                                     resolveFns.fetchData_personChats_messages_author);
 
-                    TypesCommon.applyFilter(fieldName, contextVar);
+                    GqlTypesCommon.applyFilter(fieldName, contextVar);
                 }
             }
             //-----------------------------------------------------------------------

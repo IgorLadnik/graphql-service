@@ -1,4 +1,4 @@
-import { typesCommon } from '../app';
+import { gqlTypesCommon } from '../app';
 
 export type ResolveFunc = (field: any, args: any, contextConst: any, contextVar: any) => void;
 
@@ -7,7 +7,7 @@ export class ClassCommon {
         public type: string,
         public id: number,
         public resolveFunc: ResolveFunc = (field, args, contextConst, contextVar)  =>
-            typesCommon.filter(this.type, contextVar)
+            gqlTypesCommon.filter(this.type, contextVar)
         ) { }
 }
 
