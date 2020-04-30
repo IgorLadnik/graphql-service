@@ -116,6 +116,38 @@ export const gqlTypesCommon = new GqlTypesCommon(gqlProvider, logger);
 
             //-----------------------------------------------------------------------
         );
+
+
+    // Process source string
+
+    const src = `
+        query TheQuery {
+              personChats(personName: "Rachel") {
+                id
+                topic
+                participants {
+                  name
+                  email
+                }
+                messages {
+                  author {
+                    name
+                    role
+                  }
+                  text
+                  time
+                }
+              }
+            
+              user(id: 1) {
+                name
+                email
+                role
+              }
+            }
+        `;
+
+    const output = await gqlProvider.processSource(src);
 })();
 
 

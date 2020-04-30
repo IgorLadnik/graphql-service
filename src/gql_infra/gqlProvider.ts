@@ -1,6 +1,7 @@
 const graphql = require('graphql');
 const { GraphQLObjectType, GraphQLSchema, GraphQLID } = graphql;
 import { DocumentNode, GraphQLError } from 'graphql';
+import { parse } from 'graphql/language/parser';
 import _ from 'lodash';
 import { ILogger } from '../logger';
 import { ValidationRule } from 'graphql/validation/ValidationContext';
@@ -51,6 +52,9 @@ export class GqlProvider implements GqlProvider {
                         this.logger,
                         this.withExecution)
             .executeFn(inboundObj);
+
+    processSource = async (src: string): Promise<string> =>
+        await this.executeFn(parse(src).definitions[0]);
 
     registerTypes = (...arrArgs: Array<any>): GqlProvider => {
         arrArgs?.forEach((args: any) => this.types.push(args));
