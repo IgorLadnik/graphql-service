@@ -27,6 +27,12 @@ export type FieldDescription = {
     children: Array<FieldDescription>,
 };
 
+export enum Operation {
+    none = 0,
+    query,
+    mutation
+};
+
 export class GqlRequestHandler {
     contextVar: ContextMap;
 
@@ -39,6 +45,9 @@ export class GqlRequestHandler {
     private field: Field;
 
     private readonly logPrefix: string = `** ${this.id} **  `;
+
+    private operation = Operation.none;
+    private operationName: string;
 
     constructor(
         private id: string,
@@ -56,6 +65,11 @@ export class GqlRequestHandler {
         this.contextVar = { };
 
         this.contextVar[Utils.handlerIdPrefix] = this.logPrefix;
+
+        if (inboundObj.kind === 'OperationDefinition') {
+            this.operation = GqlRequestHandler.getOperation(inboundObj.operation);
+            this.operationName = inboundObj.name.value;
+        }
 
         // Parsing inbound query to obtain "this.actionTree"
         try {
@@ -319,4 +333,12 @@ export class GqlRequestHandler {
 
     private log = (message: string) =>
         this.logger.log(`${this.logPrefix}${message}`);
+
+    private static getOperation = (strOperation: string): Operation => {
+        switch (strOperation) {
+            case 'query': return Operation.query;
+            case 'mutation': return Operation.mutation;
+            default:  return Operation.none;
+        }
+    }
 }
