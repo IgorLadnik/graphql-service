@@ -21,158 +21,129 @@ export async function connectToSql (logger: ILogger): Promise<any> {
 }
 
 export const sqlResolveFns = {
-    //-- Queries ----------------------------------------------------------------------------
+    //-- Common for queries -----------------------------------------------------------
 
     fetchFromDb: async (query: string, contextConst: any): Promise<Array<any>> =>
         await contextConst['sql'].query(query),
 
-    query_dummy: async (field: any, args: any, contextConst: any, contextVar: any,
-                            parent: any): Promise<Array<any>> => {
+    sqlQuery: async (fnName: string, cxtKey: string,
+                     field: any, args: any, contextConst: any, contextVar: any, parent: any,
+                     getQueryFn: Function, filterFn: Function): Promise<Array<any>> => {
         let retVal: any;
-        if (!_.isNil(parent)) {
-            logger.log(`${contextVar[Utils.handlerIdPrefix]}query_dummy() - sql`);
+        const callerId = `${contextVar[Utils.handlerIdPrefix]}`;
+        if (_.isNil(contextVar[cxtKey])) {
+            // Fetching data from database on the 1st call only
+            logger.log(`${callerId}${fnName}() - sql - actual access to database`);
+            try {
+                contextVar[cxtKey] = await sqlResolveFns.fetchFromDb(getQueryFn(), contextConst);
+            }
+            catch (err) {
+                logger.log(`${callerId}*** Error in fetching part of resolve function \"${fnName}()\". ${err}`);
+            }
+        }
+        else {
+            logger.log(`${callerId}${fnName}() - sql`);
 
+            if (!_.isNil(parent)) {
+                try {
+                    retVal = filterFn(contextVar[cxtKey]);
+                }
+                catch (err) {
+                    logger.log(`${callerId}*** Error in filter part of resolve function \"${fnName}()\". ${err}`);
+                }
+            }
         }
 
         return retVal;
     },
 
-    query_user: async (field: any, args: any, contextConst: any, contextVar: any,
-                           parent: any): Promise<Array<any>> => {
-        let retVal: any;
-        const callerId = `${contextVar[Utils.handlerIdPrefix]}`;
+    // query_dummy: async (field: any, args: any, contextConst: any, contextVar: any,
+    //                     parent: any): Promise<Array<any>> => {
+    //     let retVal: any;
+    //     if (!_.isNil(parent)) {
+    //         logger.log(`${contextVar[Utils.handlerIdPrefix]}query_dummy() - sql`);
+    //
+    //     }
+    //
+    //     return retVal;
+    // },
+
+    //-- Queries ----------------------------------------------------------------------------
+
+    query_user: async (field: any, args: any, contextConst: any, contextVar: any, parent: any): Promise<Array<any>> => {
         const cxtKey = '_level0_user';
-        if (_.isNil(contextVar[cxtKey])) {
-            logger.log(`${callerId}query_user() - sql - actual access to database`);
-
-            GqlTypesCommon.updateFieldTypeFilter(field, contextVar);
-            const queryArgs = GqlTypesCommon.getQueryArgs(field);
-            const query = `SELECT ${queryArgs} FROM Users WHERE id = ${args.id}`;
-            contextVar[cxtKey] = await sqlResolveFns.fetchFromDb(query, contextConst);
-        }
-        else {
-            logger.log(`${callerId}query_user() - sql`);
-
-            if (!_.isNil(parent))
-                retVal = contextVar[cxtKey];
-        }
-
-        return retVal;
+        return await sqlResolveFns.sqlQuery('query_user', cxtKey, field, args, contextConst, contextVar, parent,
+            () => {
+                GqlTypesCommon.updateFieldTypeFilter(field, contextVar);
+                const queryArgs = GqlTypesCommon.getQueryArgs(field);
+                return `SELECT ${queryArgs} FROM Users WHERE id = ${args.id}`;
+            },
+            () => contextVar[cxtKey]
+        );
     },
 
     query_personChats: async (field: any, args: any, contextConst: any, contextVar: any,
                                   parent: any): Promise<Array<any>> => {
-        let retVal: any;
-        const callerId = `${contextVar[Utils.handlerIdPrefix]}`;
         const cxtKey = '_level0_chats';
-        if (_.isNil(contextVar[cxtKey])) {
-            logger.log(`${callerId}query_personChats() - sql - actual access to database`);
-
-            GqlTypesCommon.updateFieldTypeFilter(field, contextVar);
-            const query = `SELECT * FROM Chats WHERE id in
-                                     (SELECT chatId FROM Participants WHERE userId in
-                                        (SELECT id FROM Users WHERE name = '${args.personName}'))`;
-            contextVar[cxtKey] = await sqlResolveFns.fetchFromDb(query, contextConst);
-        }
-        else {
-            logger.log(`${callerId}query_personChats() - sql`);
-
-            if (!_.isNil(parent))
-              retVal = contextVar[cxtKey];
-        }
-
-        return retVal;
+        return await sqlResolveFns.sqlQuery('query_user', cxtKey, field, args, contextConst, contextVar, parent,
+            () => {
+                GqlTypesCommon.updateFieldTypeFilter(field, contextVar);
+                return `SELECT * FROM Chats WHERE id in
+                          (SELECT chatId FROM Participants WHERE userId in
+                              (SELECT id FROM Users WHERE name = '${args.personName}'))`;
+            },
+            () => contextVar[cxtKey]
+        );
     },
 
     query_personChats_participants: async (field: any, args: any, contextConst: any, contextVar: any,
                                                parent: any): Promise<Array<any>> => {
-        let retVal: any;
-        const callerId = `${contextVar[Utils.handlerIdPrefix]}`;
         const cxtKey = '_level1_participants';
-        if (_.isNil(contextVar[cxtKey])) {
-            // Fetching data from database on the 1st call only
-            logger.log(`${callerId}query_personChats_participants() - sql - actual access to database`);
-
-            GqlTypesCommon.updateFieldTypeFilter(field, contextVar);
-            const queryArgs = GqlTypesCommon.getQueryArgs(field);
-
-            const strChatIds = contextVar['_level0_chats']?.map((c: any) => c.id)?.toString();
-            const query = `
-                SELECT ${queryArgs}, Participants.chatId AS chatId FROM Users
-                INNER JOIN Participants
-                ON Users.id = Participants.userId
-                WHERE Participants.chatId in (${strChatIds})
-            `;
-            contextVar[cxtKey] = await sqlResolveFns.fetchFromDb(query, contextConst);
-        }
-        else {
-            logger.log(`${callerId}query_personChats_participants() - sql`);
-
-            if (!_.isNil(parent)) {
-                const items = contextVar[cxtKey];
-                retVal = _.filter(items, (item: any) => item.chatId === parent.id)
-            }
-        }
-
-        return retVal;
+        return await sqlResolveFns.sqlQuery('query_user', cxtKey, field, args, contextConst, contextVar, parent,
+            () => {
+                GqlTypesCommon.updateFieldTypeFilter(field, contextVar);
+                const queryArgs = GqlTypesCommon.getQueryArgs(field);
+                const strChatIds = contextVar['_level0_chats']?.map((c: any) => c.id)?.toString();
+                return `
+                        SELECT ${queryArgs}, Participants.chatId AS chatId FROM Users
+                        INNER JOIN Participants
+                        ON Users.id = Participants.userId
+                        WHERE Participants.chatId in (${strChatIds})
+                    `;
+            },
+            () => _.filter(contextVar[cxtKey], (item: any) => item.chatId === parent.id)
+        );
     },
 
     query_personChats_messages: async (field: any, args: any, contextConst: any, contextVar: any,
                                            parent: any): Promise<Array<any>> => {
-        let retVal: any;
-        const callerId = `${contextVar[Utils.handlerIdPrefix]}`;
         const cxtKey = '_level1_messages';
-        if (_.isNil(contextVar[cxtKey])) {
-            // Fetching data from database on the 1st call only
-            logger.log(`${callerId}query_personChats_messages() - sql - actual access to database`);
-
-            GqlTypesCommon.updateFieldTypeFilter(field, contextVar);
-            const queryArgs = GqlTypesCommon.getQueryArgs(field);
-
-            const strChatIds = contextVar['_level0_chats']?.map((c: any) => c.id)?.toString();
-            const query = `SELECT * FROM ChatMessages WHERE chatId in (${strChatIds})`;
-            contextVar[cxtKey] = await sqlResolveFns.fetchFromDb(query, contextConst);
-        }
-        else {
-            logger.log(`${callerId}query_personChats_messages() - sql`);
-
-            if (!_.isNil(parent)) {
+        return await sqlResolveFns.sqlQuery('query_user', cxtKey, field, args, contextConst, contextVar, parent,
+            () => {
+                GqlTypesCommon.updateFieldTypeFilter(field, contextVar);
+                const queryArgs = GqlTypesCommon.getQueryArgs(field);
+                const strChatIds = contextVar['_level0_chats']?.map((c: any) => c.id)?.toString();
+                return `SELECT * FROM ChatMessages WHERE chatId in (${strChatIds})`;
+            },
+            () => {
                 GqlTypesCommon.setFilter('ChatMessage', ['id', 'text', 'time', 'authorId', 'chatId'], contextVar);
-
-                const items = contextVar[cxtKey];
-                retVal = _.filter(items, (item: any) => item.chatId === parent.id);
+                return _.filter(contextVar[cxtKey], (item: any) => item.chatId === parent.id);
             }
-        }
-
-        return retVal;
+        );
     },
 
     query_personChats_messages_author: async (field: any, args: any, contextConst: any, contextVar: any,
                                                   parent: any): Promise<Array<any>> => {
-        let retVal: any;
-        const callerId = `${contextVar[Utils.handlerIdPrefix]}`;
         const cxtKey = '_level2_messages_author';
-        if (_.isNil(contextVar[cxtKey])) {
-            // Fetching data from database on the 1st call only
-            logger.log(`${callerId}query_personChats_messages_author() - sql - actual access to database`);
-
-            GqlTypesCommon.updateFieldTypeFilter(field, contextVar);
-            const queryArgs = GqlTypesCommon.getQueryArgs(field);
-
-            const strAuthorIds = contextVar['_level1_messages'].map((m: any) => m.authorId).toString();
-            const query = `SELECT id, ${queryArgs} FROM Users WHERE id in (${strAuthorIds})`;
-            contextVar[cxtKey] = await sqlResolveFns.fetchFromDb(query, contextConst);
-        }
-        else {
-            logger.log(`${callerId}query_personChats_messages_author() - sql`);
-
-            if (!_.isNil(parent)) {
-                const items = contextVar[cxtKey];
-                retVal = _.filter(items, (item: any) => item.id === parent.authorId);
-            }
-        }
-
-        return retVal;
+        return await sqlResolveFns.sqlQuery('query_user', cxtKey, field, args, contextConst, contextVar, parent,
+            () => {
+                GqlTypesCommon.updateFieldTypeFilter(field, contextVar);
+                const queryArgs = GqlTypesCommon.getQueryArgs(field);
+                const strAuthorIds = contextVar['_level1_messages'].map((m: any) => m.authorId).toString();
+                return `SELECT id, ${queryArgs} FROM Users WHERE id in (${strAuthorIds})`;
+             },
+            () => _.filter(contextVar[cxtKey], (item: any) => item.id === parent.authorId)
+        );
     },
 
     //-- Mutations ----------------------------------------------------------------------------
