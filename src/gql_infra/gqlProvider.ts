@@ -53,11 +53,27 @@ export class GqlProvider implements GqlProvider {
                         this.withExecution)
             .executeFn(inboundObj);
 
-    processSource = async (src: string): Promise<string> =>
-        await this.executeFn(GqlProvider.parseFn(src).definitions[0]);
+    processSource = async (src: string): Promise<string> => {
+        try {
+            return await this.executeFn(this.parseFn(src).definitions[0]);
+        }
+        catch (err) {
+            const errorMessage = `*** Error in \"executeFn()\".`;
+            this.logger.log(`${errorMessage} ${err}`);
+            return errorMessage;
+        }
+    }
 
-    static parseFn = (src: string): any =>
-        parse(src, { noLocation: true });
+    parseFn = (src: string): any => {
+        try {
+            return parse(src, {noLocation: true});
+        }
+        catch (err) {
+            const errorMessage = `*** Error in parsing source \"${src}\". ${err}`;
+            this.logger.log(errorMessage);
+            return errorMessage;
+        }
+    }
 
     registerTypes = (...arrArgs: Array<any>): GqlProvider => {
         arrArgs?.forEach((args: any) => this.types.push(args));

@@ -9,6 +9,7 @@ import { GqlProvider } from './gql_infra/gqlProvider';
 import { cachedResolveFns } from './resolve_funcs/cached/cachedDataResolveFuncs';
 import { sqlResolveFns, connectToSql } from './resolve_funcs/sql/sqlServerResolveFuncs';
 import { User, ChatMessage, Chat } from './types/types';
+import bodyParser from 'body-parser';
 
 const storage = process.env.GqlSchemalessServiceStorage;
 
@@ -17,17 +18,17 @@ const gqlProvider = new GqlProvider(logger);
 export const gqlTypesCommon = new GqlTypesCommon(gqlProvider, logger);
 
 (async function main() {
-    const app = express();
+    const server1 = express();
 
-    app.use('*', cors());
-    app.use(compression());
+    server1.use('*', cors());
+    server1.use(compression());
 
-    app.use('/graphql', graphqlHTTP({
+    server1.use('/graphql', graphqlHTTP({
         schema: gqlProvider.schema,  // schema stub
         graphiql: true,
 
         customParseFn: (source: Source): DocumentNode =>
-            GqlProvider.parseFn(source.body),
+            gqlProvider.parseFn(source.body),
 
         customExecuteFn: async (args: ExecutionArgs): Promise<any> =>
             await gqlProvider.executeFn(args.document.definitions[0]),
@@ -39,15 +40,15 @@ export const gqlTypesCommon = new GqlTypesCommon(gqlProvider, logger);
             gqlProvider.formatErrorFn(error),
     }));
 
-    let port = 3000;
-    let address = `http://localhost:${port}/graphql`;
+    let port1 = 3000;
+    let address1 = `http://localhost:${port1}/graphql`;
 
     try {
-        await app.listen(port);
-        logger.log(`\n--- GraphQL schemaless service is listening on ${address}`);
+        await server1.listen(port1);
+        logger.log(`\n--- GraphQL schemaless service is listening on ${address1}`);
     }
     catch (err) {
-        logger.log(`\n*** Error to listen on ${address}. ${err}`)
+        logger.log(`\n*** Error to listen on ${address1}. ${err}`)
     }
 
     let resolveFns: any;
@@ -154,6 +155,38 @@ export const gqlTypesCommon = new GqlTypesCommon(gqlProvider, logger);
         `;
 
     const output = await gqlProvider.processSource(src);
+
+
+    // REST Server Processes GQL query as Plain Text
+
+    const server2 = express();
+    server2.use(bodyParser.urlencoded({ extended: true }));
+    server2.use(bodyParser.json());
+    server2.use(bodyParser.raw());
+    server2.use(bodyParser.text());
+
+    server2.use('*', cors());
+    server2.use(compression());
+
+    const port2 = 4000;
+    const address2 = `http://localhost:${port2}`;
+
+    server2.post('/', async (req: any, res: any) => {
+        let output = 'No result';
+        if (req.headers['content-type'] === 'text/plain')
+            output = await gqlProvider.processSource(req.body);
+
+        res.send(output);
+    });
+
+    try {
+        await server2.listen(port2);
+        logger.log(`\n--- Server2 is listening on ${address2}`);
+    }
+    catch (err) {
+        logger.log(`\n*** Error to listen on ${address2}. ${err}`)
+    }
+
 })();
 
 
