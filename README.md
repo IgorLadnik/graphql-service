@@ -28,16 +28,20 @@ It is assumed that the server receives those types on its start before starting 
 
 It is a Web server which
 - receives GQL queries,
-- parses it to a typed hierarchy tree (**typedFieldsTree** member of class **GqlRequestHandle**; output to console by default), and
+- parses it to a typed hierarchy tree (**typedFieldsTree** member of class **GqlRequestHandle**; 
+output to console by default), and
 - executes queries to a simple SQL Server database with an attempt to generalize resolve functions.
 
-GQL infrastructure consists of classes **GqlProvider** (file *gqlProvider.ts*) and **TypesCommon** (file *typesCommon.ts*).   
-Class **GqlProvider** is responsible for parsing query and along with class **TypesCommon** 
-provides mechanism for execution of resolve functions.
+GQL infrastructure consists of main classes 
+- **GqlProvider** (file *gqlProvider.ts*),
+- **GqlRequestHandler**  (file *gqlRequestHandler.ts*), and 
+- **GqlTypesCommon** (file *gqlTypesCommon.ts*).   
+
+These classes are responsible for parsing incoming request and provide mechanism for execution of resolve functions.
 
 File *types.ts* contains types objects.
 
-## Go Schemaless
+## Going Schemaless
 
 In order to be able to process any query hook functions of **graphqlHTTP** are intercepted:  
  
@@ -58,7 +62,7 @@ In order to be able to process any query hook functions of **graphqlHTTP** are i
 		  gqlProvider.formatErrorFn(error),
 	})); 
 	
-Class **GqlProvider** performs the main job.
+Class **GqlProvider** provides implementation of the hook functions.
 First, its instance is created:
 	
 	const gqlProvider = new GqlProvider(logger);
@@ -103,28 +107,45 @@ Then type objects of domain entities (file *types.ts*) and resolve functions sho
       );
 		
 In registered resolved field provides full path to the field and the field resolve function.
-In addition, topmost field should provide its output type as an dummy object of appropriate type (please see file *types.ts*).
+In addition, topmost field should provide its output type as an dummy object of appropriate type 
+(please see file *types.ts*).
 E.g., object **User** represents type **ClassUser**.
-When field output type is array, then *type* property is assigned to an array with the appropriate type dummy object 
+When field output type is array, then **type** property is assigned to an array with the appropriate type dummy object 
 as the array first member, e.g., array **[Chat]** for type **Array&lt;ClassChat&gt;**.      
+
+## Request Processing
+
+Web server should be able to process several requests simultaneously.
+The processing requires usage of state properties, particularly to reduce number of arguments of recursive functions.
+To ensure parallel requests handling, class method **executeFn** of class **GqlProvider** creates a separate instance
+of class **GqlRequestHandler** for each request.
+Instance of class **GqlRequestHandler** holds a state required for processing of a single request.    
 	
-## Query Parsing
+## Parsing of Request Object
 
 Usage of the above hooks implies custom parsing of GQL queries.
-Recursive method **parse()** of class **GqlProvider** parses an inbound query and produces **typesFieldsTree** hierarchy.
-This tree independent on actual data retrieving mechanism.
-It defines order of data functions calls.
+
+Parsing of request objects is carried out in two steps.
+First, received string is parsed with standard **parse()** function from *graphql/language/parser*.
+This function is embed in static method **parseFn()** of **GqlProvider** class.   
+
+Then recursive method **makeTypedFieldsTree()** of class **GqlRequestHandlerr** converts result of previous parsing
+to a **typesFieldsTree** hierarchy.
+This tree is independent on actual data retrieving mechanism.
+It provides types for actual fields and defines order of data access functions calls.
 The method also validates query format and logs errors, if any.
 Parsing result is logged (by default to console).
 
 ## Dealing with Actual Data
 
-Another recursive method **execute()** of class **GqlProvider** activates resolve functions.
+Another recursive method **execute()** of class **GqlRequestHandler** activates resolve functions.
 
 Objects **contextConst** and **contextVar** are used for data exchange between resolve functions and with
-**GqlProvider** object.
-**contextConst** contains permanent objects, like connection to database, whereas
-**contextVar** holds varying objects like previous fetches results. 
+**GqlRequestHandler** object.
+**contextConst** is defined in class **GqlProvider** and common for all instances of **GqlRequestHandler** class.
+It contains permanent objects, like connection to database, whereas
+**contextVar** is specific for each instance of **GqlRequestHandler** class and holds varying objects 
+like previous fetches results. 
 
 # Notes
 
@@ -135,8 +156,9 @@ One build error takes place for unknown reason:
 
 It does not affect code execution.
 
-By default, code runs with "cached" data.
-It may use a local database in stead (to switch we have to change in file *app.ts* value of **isTestObjects** to *false*).
+By default, code runs with test "cached" data.
+It may use a local SQL Server in stead (to switch we have to install environment system variable 
+**GqlSchemalessServiceStorage** and set its value to *SqlServer*).
 
 - Simple requests tested so far.
 - "Naive" handling of SQL Server with direct SQL queries without any ORM.

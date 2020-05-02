@@ -10,7 +10,7 @@ import { cachedResolveFns } from './resolve_funcs/cached/cachedDataResolveFuncs'
 import { sqlResolveFns, connectToSql } from './resolve_funcs/sql/sqlServerResolveFuncs';
 import { User, ChatMessage, Chat } from './types/types';
 
-const isCachedObjects = true;  // false - to use SQL Server
+const storage = process.env.GqlSchemalessServiceStorage;
 
 export const logger = new Logger();
 const gqlProvider = new GqlProvider(logger);
@@ -51,11 +51,14 @@ export const gqlTypesCommon = new GqlTypesCommon(gqlProvider, logger);
     }
 
     let resolveFns: any;
-    if (isCachedObjects)
-        resolveFns = cachedResolveFns;
-    else {
-        resolveFns = sqlResolveFns;
-        gqlProvider.contextConst['sql'] = await connectToSql(logger);
+    switch (storage) {
+        case "SqlServer":
+            resolveFns = sqlResolveFns;
+            gqlProvider.contextConst['sql'] = await connectToSql(logger);
+            break;
+        default:
+            resolveFns = cachedResolveFns;
+            break;
     }
 
     // Settings for gqlProvider.
