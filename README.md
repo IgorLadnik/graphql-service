@@ -28,8 +28,8 @@ It is assumed that the server receives those types on its start before starting 
 
 It is a Web server which
 - receives GQL queries,
-- parses it to a hierarchy tree (called in the code **actionTree** and output to console by default), and
-- executes some selected queries to a simple SQL Server database with an attempt to generalize resolve functions.
+- parses it to a typed hierarchy tree (**typedFieldsTree** member of class **GqlRequestHandle**; output to console by default), and
+- executes queries to a simple SQL Server database with an attempt to generalize resolve functions.
 
 GQL infrastructure consists of classes **GqlProvider** (file *gqlProvider.ts*) and **TypesCommon** (file *typesCommon.ts*).   
 Class **GqlProvider** is responsible for parsing query and along with class **TypesCommon** 
@@ -111,7 +111,7 @@ as the array first member, e.g., array **[Chat]** for type **Array&lt;ClassChat&
 ## Query Parsing
 
 Usage of the above hooks implies custom parsing of GQL queries.
-Recursive method **parse()** of class **GqlProvider** parses an inbound query and produces **actionTree** hierarchy.
+Recursive method **parse()** of class **GqlProvider** parses an inbound query and produces **typesFieldsTree** hierarchy.
 This tree independent on actual data retrieving mechanism.
 It defines order of data functions calls.
 The method also validates query format and logs errors, if any.
@@ -119,7 +119,7 @@ Parsing result is logged (by default to console).
 
 ## Dealing with Actual Data
 
-Another recursive method **executeActionTree()** of class **GqlProvider** activates resolve functions.
+Another recursive method **execute()** of class **GqlProvider** activates resolve functions.
 
 Objects **contextConst** and **contextVar** are used for data exchange between resolve functions and with
 **GqlProvider** object.

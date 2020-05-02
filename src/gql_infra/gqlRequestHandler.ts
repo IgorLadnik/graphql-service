@@ -36,7 +36,7 @@ export enum Operation {
 export class GqlRequestHandler {
     contextVar: ContextMap;
 
-    private actionTree: any;
+    private typedFieldsTree: any;
     private errors = new Array<string>();
 
     // For recursion
@@ -58,7 +58,7 @@ export class GqlRequestHandler {
     executeFn = async (inboundObj: any): Promise<string> => {
         // Initialize appropriate variables for new query
         this.errors = new Array<string>();
-        this.actionTree = new Array<any>();
+        this.typedFieldsTree = new Array<any>();
         this.contextVar = { };
 
         this.contextVar[Utils.handlerIdPrefix] = this.logPrefix;
@@ -72,7 +72,7 @@ export class GqlRequestHandler {
 
         // Parsing inbound query to obtain "this.actionTree"
         try {
-            this.parse(inboundObj);
+            this.makeTypedFieldsTree(inboundObj);
         }
         catch (err) {
             this.handleError(`*** Error on executeFn: ${err}`);
@@ -82,21 +82,21 @@ export class GqlRequestHandler {
         const results = new Array<any>();
         if (this.isErrorsFree()) {
             this.log('-- Action Tree -----------------------------------');
-            output = GqlRequestHandler.createOutput(this.actionTree, 'action_tree');
+            output = GqlRequestHandler.createOutput(this.typedFieldsTree, 'typed_fields_tree');
             this.log(`${GqlRequestHandler.jsonStringifyFormatted(output)}`);
 
             if (this.withExecution) {
                 // Actual data processing according to this.actionTree
                 this.log('-- Execution Trace -------------------------------');
                 try {
-                    await this.executeActionTree(this.actionTree);
+                    await this.execute(this.typedFieldsTree);
                 }
                 catch (err) {
                     this.handleError(`*** Error on executeActionTree: ${err}`);
                 }
 
                 if (this.isErrorsFree()) {
-                    this.actionTree.forEach((item: any) => {
+                    this.typedFieldsTree.forEach((item: any) => {
                         let a = this.contextVar[item.fieldName];
                         if (operation === Operation.query)
                             a = a[0][0];
@@ -127,7 +127,7 @@ export class GqlRequestHandler {
     }
 
     // Recursive parsing
-    private parse = (currentSelection: any, prevPath: string = '') => {
+    private makeTypedFieldsTree = (currentSelection: any, prevPath: string = '') => {
         let selectionSet = currentSelection?.selectionSet;
         if (!selectionSet)
             return;
@@ -160,7 +160,7 @@ export class GqlRequestHandler {
                 return;
             }
 
-            this.parse(selection, fullFieldPath);
+            this.makeTypedFieldsTree(selection, fullFieldPath);
         });
     }
 
@@ -170,7 +170,7 @@ export class GqlRequestHandler {
         if (isArray)
             type = type[0];
         let fieldName = this.field.fullFieldPath;
-        this.pushToActionTree(this.actionTree, fieldName, [fieldName], type.type, isArray);
+        this.pushToActionTree(this.typedFieldsTree, fieldName, [fieldName], type.type, isArray);
     }
 
     private setGeneralFieldType = (fullFieldPath: string) => {
@@ -180,8 +180,8 @@ export class GqlRequestHandler {
         const fieldName = this.arrPath[level];
 
         let parent: any;
-        for (let i = 0; i < this.actionTree.length; i++)
-            parent = this.getParent(this.actionTree[i]);
+        for (let i = 0; i < this.typedFieldsTree.length; i++)
+            parent = this.getParent(this.typedFieldsTree[i]);
 
         if (!_.isNil(parent)) {
             const field = _.filter(this.gqlProvider.types, t => t.type === parent.typeName)[0][fieldName];
@@ -293,7 +293,7 @@ export class GqlRequestHandler {
     }
 
     // Recursive
-    private executeActionTree = async (actionTreeItem: Array<any>) => {
+    private execute = async (actionTreeItem: Array<any>) => {
         for (let i = 0; i < actionTreeItem.length; i++) {
             let field = actionTreeItem[i];
             let fullFieldPath = Utils.composeFullFieldPath(field.arrPath);
@@ -306,7 +306,7 @@ export class GqlRequestHandler {
                     const type = this.gqlProvider.findRegisteredType(field.typeName);
                     if (!_.isNil(type)) {
                         if (!_.isNil(type.resolveFunc))
-                            await type.resolveFunc(this.actionTree, field.args, this.contextConst, this.contextVar);
+                            await type.resolveFunc(this.typedFieldsTree, field.args, this.contextConst, this.contextVar);
                         else
                             this.handleError(`*** Error on resolve function execution of type \"${type.type}\". ` +
                                 `Type \"${type.type}\" has no resolve function.`);
@@ -327,7 +327,7 @@ export class GqlRequestHandler {
                 this.handleError(`*** Error on resolve function execution of field \"${fullFieldPath}\". ${err}`);
             }
 
-            await this.executeActionTree(field.children);
+            await this.execute(field.children);
         }
     }
 
