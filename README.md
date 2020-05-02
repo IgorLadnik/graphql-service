@@ -1,10 +1,10 @@
-# Problem
+## Problem
 
 The task stated (as I understood it) in ideal form was as following:
 Create Web server that will be able to accept and process any 
 (meaning without providing schema upfront) *graphQL* (referred below as *GQL*) queries. 
 
-# What Does It Do?
+## What Does It Do?
 
 This code demonstrates an approach to a "schemaless" GQL.
 
@@ -145,9 +145,21 @@ Objects **contextConst** and **contextVar** are used for data exchange between r
 **contextConst** is defined in class **GqlProvider** and common for all instances of **GqlRequestHandler** class.
 It contains permanent objects, like connection to database, whereas
 **contextVar** is specific for each instance of **GqlRequestHandler** class and holds varying objects 
-like previous fetches results. 
+like interim fetches results. 
 
-# Notes
+## Processing of Received String
+
+So far we have discussed a *GQL* Web server that uses function **graphqlHTTP** for routing.
+This implies usage of schema stub despite schema is not actually needed. 
+However, it is possible to use the same infrastructure for an ordinary *REST* Web server with schemaless GQL.
+This is illustrated at the end of file *app.ts* with the following code:
+
+    const output = await gqlProvider.processSource(src);
+    
+where *src* is received string request. 
+*output* may be returned to a client as a response to a REST request. 
+
+## Notes
 
 One build error takes place for unknown reason:
     
@@ -163,7 +175,7 @@ It may use a local SQL Server in stead (to switch we have to install environment
 - Simple requests tested so far.
 - "Naive" handling of SQL Server with direct SQL queries without any ORM.
 
-# Issues
+## Issues
 
 There two main issues, namely,
 
