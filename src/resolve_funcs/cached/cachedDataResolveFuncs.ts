@@ -1,7 +1,7 @@
+import _ from "lodash";
 import { Role } from "../../types/types";
 import { GqlTypesCommon } from '../../gql_infra/gqlTypesCommon';
 import { logger } from "../../app";
-import _ from "lodash";
 import { Utils } from '../../gql_infra/utils';
 
 export const users = [
@@ -85,7 +85,7 @@ export const cachedResolveFns = {
             return new Array<any>();
 
         logger.log(`${contextVar[Utils.handlerIdPrefix]}query_personChats() - cached`);
-        GqlTypesCommon.updateFieldTypeFilter(field, contextVar); //?
+        GqlTypesCommon.updateFieldTypeFilter(field, contextVar);
         const u = (await cachedResolveFns.getObjects(users, 'name', [args.personName]))[0];
         const ps = await cachedResolveFns.getObjects(participants, 'userId', [u.id]);
         return  await cachedResolveFns.getObjects(chats, 'id', ps.map((p: any) => p.chatId));

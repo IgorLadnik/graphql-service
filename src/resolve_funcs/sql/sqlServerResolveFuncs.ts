@@ -1,8 +1,8 @@
+import _ from 'lodash';
 import { ILogger } from '../../logger';
+import { logger } from "../../app";
 import { SqlServerProvider } from './sqlServerProvider';
 import { GqlTypesCommon } from '../../gql_infra/gqlTypesCommon';
-import { logger } from "../../app";
-import _ from 'lodash';
 import { Utils } from '../../gql_infra/utils';
 
 export async function connectToSql (logger: ILogger): Promise<any> {
@@ -70,9 +70,11 @@ export const sqlResolveFns = {
 
     //-- Queries ----------------------------------------------------------------------------
 
-    query_user: async (field: any, args: any, contextConst: any, contextVar: any, parent: any): Promise<Array<any>> => {
+    query_user: async (field: any, args: any, contextConst: any, contextVar: any,
+                                parent: any): Promise<Array<any>> => {
         const cxtKey = '_level0_user';
-        return await sqlResolveFns.sqlQuery('query_user', cxtKey, field, args, contextConst, contextVar, parent,
+        return await sqlResolveFns.sqlQuery('query_user',
+                cxtKey, field, args, contextConst, contextVar, parent,
             () => {
                 GqlTypesCommon.updateFieldTypeFilter(field, contextVar);
                 const queryArgs = GqlTypesCommon.getQueryArgs(field);
@@ -85,7 +87,8 @@ export const sqlResolveFns = {
     query_personChats: async (field: any, args: any, contextConst: any, contextVar: any,
                                   parent: any): Promise<Array<any>> => {
         const cxtKey = '_level0_chats';
-        return await sqlResolveFns.sqlQuery('query_user', cxtKey, field, args, contextConst, contextVar, parent,
+        return await sqlResolveFns.sqlQuery('query_personChats',
+                cxtKey, field, args, contextConst, contextVar, parent,
             () => {
                 GqlTypesCommon.updateFieldTypeFilter(field, contextVar);
                 return `SELECT * FROM Chats WHERE id in
@@ -99,7 +102,8 @@ export const sqlResolveFns = {
     query_personChats_participants: async (field: any, args: any, contextConst: any, contextVar: any,
                                                parent: any): Promise<Array<any>> => {
         const cxtKey = '_level1_participants';
-        return await sqlResolveFns.sqlQuery('query_user', cxtKey, field, args, contextConst, contextVar, parent,
+        return await sqlResolveFns.sqlQuery('query_personChats_participants',
+                cxtKey, field, args, contextConst, contextVar, parent,
             () => {
                 GqlTypesCommon.updateFieldTypeFilter(field, contextVar);
                 const queryArgs = GqlTypesCommon.getQueryArgs(field);
@@ -118,7 +122,8 @@ export const sqlResolveFns = {
     query_personChats_messages: async (field: any, args: any, contextConst: any, contextVar: any,
                                            parent: any): Promise<Array<any>> => {
         const cxtKey = '_level1_messages';
-        return await sqlResolveFns.sqlQuery('query_user', cxtKey, field, args, contextConst, contextVar, parent,
+        return await sqlResolveFns.sqlQuery('query_personChats_messages',
+                cxtKey, field, args, contextConst, contextVar, parent,
             () => {
                 GqlTypesCommon.updateFieldTypeFilter(field, contextVar);
                 const queryArgs = GqlTypesCommon.getQueryArgs(field);
@@ -126,7 +131,8 @@ export const sqlResolveFns = {
                 return `SELECT * FROM ChatMessages WHERE chatId in (${strChatIds})`;
             },
             () => {
-                GqlTypesCommon.setFilter('ChatMessage', ['id', 'text', 'time', 'authorId', 'chatId'], contextVar);
+                GqlTypesCommon.setFilter(
+                    'ChatMessage', ['id', 'text', 'time', 'authorId', 'chatId'], contextVar);
                 return _.filter(contextVar[cxtKey], (item: any) => item.chatId === parent.id);
             }
         );
@@ -135,7 +141,8 @@ export const sqlResolveFns = {
     query_personChats_messages_author: async (field: any, args: any, contextConst: any, contextVar: any,
                                                   parent: any): Promise<Array<any>> => {
         const cxtKey = '_level2_messages_author';
-        return await sqlResolveFns.sqlQuery('query_user', cxtKey, field, args, contextConst, contextVar, parent,
+        return await sqlResolveFns.sqlQuery('query_personChats_messages_author',
+                cxtKey, field, args, contextConst, contextVar, parent,
             () => {
                 GqlTypesCommon.updateFieldTypeFilter(field, contextVar);
                 const queryArgs = GqlTypesCommon.getQueryArgs(field);
