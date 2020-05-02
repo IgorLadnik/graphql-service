@@ -44,6 +44,9 @@ In order to be able to process any query hook functions of **graphqlHTTP** are i
 	app.use('/graphql', graphqlHTTP({
 	  schema: gqlProvider.schema, // schema stub
 	  graphiql: true,
+	  
+	  customParseFn: (source: Source): DocumentNode =>
+          GqlProvider.parseFn(source.body),
 
 	  customExecuteFn: async (args: ExecutionArgs): Promise<any> =>
 		  await gqlProvider.executeFn(args.document.definitions[0]),

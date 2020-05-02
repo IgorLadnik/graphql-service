@@ -25,13 +25,13 @@ export type FieldDescription = {
     isArray: boolean,
     args: any,
     children: Array<FieldDescription>,
-};
+}
 
 export enum Operation {
     none = 0,
     query,
     mutation
-};
+}
 
 export class GqlRequestHandler {
     contextVar: ContextMap;

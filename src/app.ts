@@ -2,13 +2,13 @@ import express from 'express';
 import compression from 'compression';
 import cors from 'cors';
 import graphqlHTTP from 'express-graphql';
-import { ExecutionArgs, GraphQLError } from 'graphql';
+import { DocumentNode, ExecutionArgs, GraphQLError, Source } from 'graphql';
+import { GqlTypesCommon } from './gql_infra/gqlTypesCommon';
 import { Logger } from './logger';
 import { GqlProvider } from './gql_infra/gqlProvider';
-import { User, ChatMessage, Chat } from './types/types';
-import { GqlTypesCommon } from './gql_infra/gqlTypesCommon';
 import { cachedResolveFns } from './resolve_funcs/cached/cachedDataResolveFuncs';
 import { sqlResolveFns, connectToSql } from './resolve_funcs/sql/sqlServerResolveFuncs';
+import { User, ChatMessage, Chat } from './types/types';
 
 const isCachedObjects = true;  // false - to use SQL Server
 
@@ -25,6 +25,9 @@ export const gqlTypesCommon = new GqlTypesCommon(gqlProvider, logger);
     app.use('/graphql', graphqlHTTP({
         schema: gqlProvider.schema,  // schema stub
         graphiql: true,
+
+        customParseFn: (source: Source): DocumentNode =>
+            GqlProvider.parseFn(source.body),
 
         customExecuteFn: async (args: ExecutionArgs): Promise<any> =>
             await gqlProvider.executeFn(args.document.definitions[0]),

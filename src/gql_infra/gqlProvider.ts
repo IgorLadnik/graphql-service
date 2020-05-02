@@ -54,7 +54,10 @@ export class GqlProvider implements GqlProvider {
             .executeFn(inboundObj);
 
     processSource = async (src: string): Promise<string> =>
-        await this.executeFn(parse(src).definitions[0]);
+        await this.executeFn(GqlProvider.parseFn(src).definitions[0]);
+
+    static parseFn = (src: string): any =>
+        parse(src, { noLocation: true });
 
     registerTypes = (...arrArgs: Array<any>): GqlProvider => {
         arrArgs?.forEach((args: any) => this.types.push(args));
