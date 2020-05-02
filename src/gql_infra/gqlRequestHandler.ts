@@ -337,9 +337,6 @@ export class GqlRequestHandler {
     isErrorsFree = (): boolean =>
         this.errors.length === 0;
 
-    private log = (message: string) =>
-        this.logger.log(`${this.logPrefix}${message}`);
-
     private static getOperation = (strOperation: string): Operation => {
         switch (strOperation) {
             case 'query': return Operation.query;
@@ -347,4 +344,7 @@ export class GqlRequestHandler {
             default:  return Operation.none;
         }
     }
+
+    private log = (message: string) =>
+        this.logger.log(`${this.logPrefix}${message}`);
 }

@@ -13,6 +13,9 @@ export class GqlTypesCommon {
 
     resolveQuery = async (field: any, args: any, contextConst: any, contextVar: any,
                           queryFn: Function, currentLevel: number = 0): Promise<void> => {
+        const fullFieldPath = Utils.composeFullFieldPath(field.arrPath);
+        this.logger.log(`${contextVar[Utils.handlerIdPrefix]}common resolveQuery for \"${fullFieldPath}\"`);
+
         const level = field.arrPath.length - 1;
         if (level > 1 && currentLevel < level - 1) {
             const fieldName = field.arrPath[currentLevel];
@@ -23,11 +26,7 @@ export class GqlTypesCommon {
         else {
             // Fetching data from storage on a level - access to database
             await queryFn(field, args, contextConst, contextVar, null);
-
-            const fullFieldPath = Utils.composeFullFieldPath(field.arrPath);
             const type = this.gql.findRegisteredType(field.typeName);
-            this.logger.log(`${contextVar[Utils.handlerIdPrefix]}common resolveFunc for ${fullFieldPath}`);
-
             const fieldName = level === 0 ? fullFieldPath : field.arrPath[level - 1];
             const arrParentsObj = contextVar[`${fieldName}`]?.[0];
             const levelFieldName = field.arrPath[level];
