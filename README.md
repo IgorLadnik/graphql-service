@@ -159,7 +159,7 @@ This is illustrated at the end of file *app.ts* with the following code:
 where *src* is received string request. 
 *output* may be returned to a client as a response to a REST request. 
 
-Code fragment with **server2** demonstrate REST server processing GQL query received as plain text:
+Code fragment with **server2** demonstrates REST server processing GQL query received as plain text:
 
     server2.post('/', async (req: any, res: any) => {
         let output = 'No result';
