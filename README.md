@@ -107,7 +107,7 @@ Then type objects of domain entities (file *types.ts*) and resolve functions sho
       );
 		
 In registered resolved field provides full path to the field and the field resolve function.
-In addition, topmost field should provide its output type as an dummy object of appropriate type 
+In addition, topmost field should provide its output type as a dummy object of appropriate type 
 (please see file *types.ts*).
 E.g., object **User** represents type **ClassUser**.
 When field output type is array, then **type** property is assigned to an array with the appropriate type dummy object 
@@ -119,7 +119,7 @@ Web server should be able to process several requests simultaneously.
 The processing requires usage of state properties, particularly to reduce number of arguments of recursive functions.
 To ensure parallel requests handling, class method **executeFn** of class **GqlProvider** creates a separate instance
 of class **GqlRequestHandler** for each request.
-Instance of class **GqlRequestHandler** holds a state required for processing of a single request.    
+Instance of class **GqlRequestHandler** holds state required for processing of a single request.    
 	
 ## Parsing of Request Object
 
@@ -142,7 +142,7 @@ Another recursive method **execute()** of class **GqlRequestHandler** activates 
 
 Objects **contextConst** and **contextVar** are used for data exchange between resolve functions and with
 **GqlRequestHandler** object.
-**contextConst** is defined in class **GqlProvider** and common for all instances of **GqlRequestHandler** class.
+**contextConst** is defined in class **GqlProvider** and is common for all instances of **GqlRequestHandler** class.
 It contains permanent objects, like connection to database, whereas
 **contextVar** is specific for each instance of **GqlRequestHandler** class and holds varying objects 
 like interim fetches results. 
@@ -185,20 +185,15 @@ It may use a local SQL Server in stead (to switch we have to install environment
 - Simple requests tested so far.
 - "Naive" handling of SQL Server with direct SQL queries without any ORM.
 
-## Issues
+## Discussion
 
-There two main issues, namely,
+This PoC project 
 
-- N+1 queries problem in server side meaning multiple data fetching on a single GQL query, and
-- In case of relational database, a complete generalization of resolve functions may not be possible.
+- supports schemaless GQL Web server with requests both as GQL and plain text,
+- provides uniform infrastructure for preparation of types hierarchy tree and activation of resolve functions,
+- illustrates resolve functions for test cached data and SQL Server storage.
 
-Both are fundamental problems of GQL. 
+As an alternative to SQL Server, non-relational database may be considered.
 
-On the first problem, for relational database reduction in number of database queries may be achieved with 
-a "broader" SQL query with inner joining followed by in-memory separating of its result. 
-This approach is illustrated in the code.
-
-The second one may be addressed with some classification of queries.
-
-As an alternative, *non-relational database may be considered*.
-
+This project may be considered as a part of a more general *Processor-Commands* infrastructure published here:
+https://github.com/IgorLadnik/NodeProcessorCommands .
