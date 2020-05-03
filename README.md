@@ -53,13 +53,13 @@ In order to be able to process any query hook functions of **graphqlHTTP** are i
           GqlProvider.parseFn(source.body),
 
 	  customExecuteFn: async (args: ExecutionArgs): Promise<any> =>
-		  await gqlProvider.executeFn(args.document.definitions[0]),
+          await gqlProvider.executeFn(args.document.definitions[0]),
 
 	  customValidateFn: (schema, documentAST, validationRules): any =>
-		  gqlProvider.validateFn(schema, documentAST, validationRules),
+          gqlProvider.validateFn(schema, documentAST, validationRules),
 
 	  customFormatErrorFn: (error: GraphQLError) =>
-		  gqlProvider.formatErrorFn(error),
+          gqlProvider.formatErrorFn(error),
 	})); 
 	
 Class **GqlProvider** provides implementation of the hook functions.
@@ -195,5 +195,5 @@ This PoC project
 
 As an alternative to SQL Server, non-relational database may be considered.
 
-This project may be considered as a part of a more general *Processor-Commands* infrastructure published here:
-https://github.com/IgorLadnik/NodeProcessorCommands .
+IMHO it would be useful to incorporate this project into a more general *Processor-Commands* infrastructure 
+published here: https://github.com/IgorLadnik/NodeProcessorCommands .
