@@ -1,5 +1,3 @@
-import {GqlTypesCommon} from "./gqlTypesCommon";
-
 const graphql = require('graphql');
 const { GraphQLObjectType, GraphQLSchema, GraphQLID } = graphql;
 import { DocumentNode, GraphQLError } from 'graphql';
@@ -8,6 +6,7 @@ import _ from 'lodash';
 import { ILogger } from '../logger';
 import { ValidationRule } from 'graphql/validation/ValidationContext';
 import { GqlRequestHandler, Field, ContextMap, ResolvedFieldsMap } from './gqlRequestHandler';
+import { GqlTypesCommon } from './gqlTypesCommon';
 import { Utils } from './utils';
 
 export interface IGqlProvider {
