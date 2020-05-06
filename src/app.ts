@@ -15,7 +15,7 @@ const storage = process.env.GqlSchemalessServiceStorage;
 
 export const logger = new Logger();
 const gqlProvider = new GqlProvider(logger);
-export const gqlTypesCommon = new GqlTypesCommon(gqlProvider, logger);
+export const gqlTypesCommon = gqlProvider.typesCommon;
 
 (async function main() {
     const server1 = express();
@@ -66,29 +66,18 @@ export const gqlTypesCommon = new GqlTypesCommon(gqlProvider, logger);
     // Placed after start listening for test purposes.
     gqlProvider
         .registerTypes(User, ChatMessage, Chat)
+        .registerResolveFunctions(resolveFns)
         .registerResolvedFields(
             //-- user ---------------------------------------------------------------
             {
                 fullFieldPath: 'user',
                 type: User, // required for topmost fields only
-                resolveFunc: async (field, args, contextConst, contextVar) =>
-                    await gqlTypesCommon.resolveQuery(field, args, contextConst, contextVar,
-                                                      resolveFns.query_user)
             },
 
             //-- personChats --------------------------------------------------------
             {
                 fullFieldPath: 'personChats',
                 type: [Chat], // required for topmost fields only
-                resolveFunc: async (field, args, contextConst, contextVar) =>
-                    await gqlTypesCommon.resolveQuery(field, args, contextConst, contextVar,
-                                                      resolveFns.query_personChats)
-            },
-            {
-                fullFieldPath: 'personChats.participants',
-                resolveFunc: async (field, args, contextConst, contextVar) =>
-                    await gqlTypesCommon.resolveQuery(field, args, contextConst, contextVar,
-                                                      resolveFns.query_personChats_participants)
             },
             {
                 fullFieldPath: 'personChats.messages',
@@ -96,8 +85,8 @@ export const gqlTypesCommon = new GqlTypesCommon(gqlProvider, logger);
                     const filterArgs = field.children.map((c: any) => c.fieldName);
                     GqlTypesCommon.setFilter(field.fieldName, filterArgs, contextVar);
 
-                    await gqlTypesCommon.resolveQuery(field, args, contextConst, contextVar,
-                                                      resolveFns.query_personChats_messages);
+                    await gqlProvider.resolveFunc('personChats.messages',
+                                                 field, args, contextConst, contextVar);
                 }
             },
             {
@@ -105,8 +94,8 @@ export const gqlTypesCommon = new GqlTypesCommon(gqlProvider, logger);
                 resolveFunc: async (field, args, contextConst, contextVar) => {
                     const fieldName = field.arrPath[1];
 
-                    await gqlTypesCommon.resolveQuery(field, args, contextConst, contextVar,
-                                                      resolveFns.query_personChats_messages_author);
+                    await gqlProvider.resolveFunc('personChats.messages.author',
+                                                          field, args, contextConst, contextVar);
 
                     GqlTypesCommon.applyFilter(fieldName, contextVar);
                 }
@@ -116,9 +105,6 @@ export const gqlTypesCommon = new GqlTypesCommon(gqlProvider, logger);
             {
                 fullFieldPath: 'addMessage',
                 type: ChatMessage, // required for topmost fields only
-                resolveFunc: async (field, args, contextConst, contextVar) =>
-                    await gqlTypesCommon.resolveMutation(field, args, contextConst, contextVar,
-                                                         resolveFns.mutation_dummy)
             },
 
             //-----------------------------------------------------------------------

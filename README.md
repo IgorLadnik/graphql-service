@@ -70,43 +70,30 @@ First, its instance is created:
 Then type objects of domain entities (file *types.ts*) and resolve functions should be registered with this object:
 
 	gqlProvider
-      .registerTypes(User, ChatMessage, Chat)
-      .registerResolvedFields(
-        {
-            fullFieldPath: 'user',
-            type: User, // required for topmost fields only
-            resolveFunc: async (field, args, contextConst, contextVar) =>
-                await gqlTypesCommon.resolveQuery(field, args, contextConst, contextVar,
-                                                  resolveFns.query_user)
-        },
-
-        {
-            fullFieldPath: 'personChats',
-            type: [Chat], // required for topmost fields only
-            resolveFunc: async (field, args, contextConst, contextVar) =>
-                await gqlTypesCommon.resolveQuery(field, args, contextConst, contextVar,
-                                                  resolveFns.query_personChats)
-        },
-        {
-            fullFieldPath: 'personChats.participants',
-            resolveFunc: async (field, args, contextConst, contextVar) =>
-                await gqlTypesCommon.resolveQuery(field, args, contextConst, contextVar,
-                                                  resolveFns.query_personChats_participants)
-        },
-        {
-          //.....
-        },
-        
-        {
-            fullFieldPath: 'addMessage',
-            type: ChatMessage, // required for topmost fields only
-            resolveFunc: async (field, args, contextConst, contextVar) =>
-                await gqlTypesCommon.resolveMutation(field, args, contextConst, contextVar,
-                                                     resolveFns.mutation_dummy)
-        },       
-      );
+        .registerTypes(User, ChatMessage, Chat)
+        .registerResolveFunctions(resolveFns)
+        .registerResolvedFields(
+            {
+                fullFieldPath: 'personChats',
+                type: [Chat], // required for topmost fields only
+            },
+            {
+                fullFieldPath: 'personChats.messages',
+                resolveFunc: async (field, args, contextConst, contextVar) => {
+                        const filterArgs = field.children.map((c: any) => c.fieldName);
+                        GqlTypesCommon.setFilter(field.fieldName, filterArgs, contextVar);
+    
+                        await gqlProvider.resolveFunc('personChats.messages',
+                                                     field, args, contextConst, contextVar);
+                },
+	        }
+            {
+                //.....
+            },        
+        );
 		
-In registered resolved field provides full path to the field and the field resolve function.
+Registered resolved field provides full field path, and the field resolve function.
+The resolve function may be defined implicitly in registered **resolveFns** based on naming convention. 
 In addition, topmost field should provide its output type as a dummy object of appropriate type 
 (please see file *types.ts*).
 E.g., object **User** represents type **ClassUser**.

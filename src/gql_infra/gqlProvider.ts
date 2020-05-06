@@ -1,3 +1,5 @@
+import {GqlTypesCommon} from "./gqlTypesCommon";
+
 const graphql = require('graphql');
 const { GraphQLObjectType, GraphQLSchema, GraphQLID } = graphql;
 import { DocumentNode, GraphQLError } from 'graphql';
@@ -6,11 +8,13 @@ import _ from 'lodash';
 import { ILogger } from '../logger';
 import { ValidationRule } from 'graphql/validation/ValidationContext';
 import { GqlRequestHandler, Field, ContextMap, ResolvedFieldsMap } from './gqlRequestHandler';
+import { Utils } from './utils';
 
 export interface IGqlProvider {
     readonly types: Array<any>;
     readonly resolvedFields: ResolvedFieldsMap;
     findRegisteredType(typeName: string): any;
+    resolveFunc(fullFieldPath: string, field: any, args: any, contextConst: any, contextVar: any): Promise<boolean>;
 }
 
 export class GqlProvider implements GqlProvider {
@@ -20,6 +24,9 @@ export class GqlProvider implements GqlProvider {
     readonly types = Array<any>();
     readonly resolvedFields: ResolvedFieldsMap = { };
     readonly contextConst: ContextMap = { };
+    readonly typesCommon: GqlTypesCommon;
+
+    resolveFns: any;
 
     private currentHandlerId: number = 0;
 
@@ -27,6 +34,8 @@ export class GqlProvider implements GqlProvider {
         const config = new GraphQLObjectType({ name: 'Query' }).toConfig();
         config.fields['_'] = GqlProvider.createFreshDummyField();
         this.schema = new GraphQLSchema({ query: new GraphQLObjectType(config) });
+
+        this.typesCommon = new GqlTypesCommon(this, logger);
     }
 
     private static createFreshDummyField = () => {
@@ -80,6 +89,11 @@ export class GqlProvider implements GqlProvider {
         return this;
     }
 
+    registerResolveFunctions = (resolveFns: any) => {
+        this.resolveFns = resolveFns;
+        return this;
+    }
+
     registerResolvedFields = (...arrArgs: Array<Field>): GqlProvider => {
         arrArgs?.forEach((field: any) => this.resolvedFields[field.fullFieldPath] = field);
         return this;
@@ -99,5 +113,23 @@ export class GqlProvider implements GqlProvider {
             this.currentHandlerId = 0;
 
         return `${++this.currentHandlerId}`;
+    }
+
+    resolveFunc = async (fullFieldPath: string,
+                         field: any, args: any, contextConst: any, contextVar: any): Promise<boolean>=> {
+        const strInterim = fullFieldPath.split(Utils.pathDelim).join('_');
+        const queryFn = this.resolveFns[`query_${strInterim}`]
+        if (!_.isNil(queryFn)) {
+            await this.typesCommon.resolveQuery(field, args, contextConst, contextVar, queryFn);
+            return true;
+        }
+
+        const mutationFn = this.resolveFns[`mutation_${strInterim}`]
+        if (!_.isNil(mutationFn)) {
+            await this.typesCommon.resolveMutation(field, args, contextConst, contextVar, mutationFn);
+            return true;
+        }
+
+        return false;
     }
 }

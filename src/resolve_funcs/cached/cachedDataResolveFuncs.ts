@@ -125,7 +125,7 @@ export const cachedResolveFns = {
 
     //-- Mutations ----------------------------------------------------------------------------
 
-    mutation_dummy: async (field: any, args: any, contextConst: any, contextVar: any,
+    mutation_addMessage: async (field: any, args: any, contextConst: any, contextVar: any,
                            parent: any): Promise<Array<any>> => {
         let retVal: any;
         const callerId = `${contextVar[Utils.handlerIdPrefix]}`;

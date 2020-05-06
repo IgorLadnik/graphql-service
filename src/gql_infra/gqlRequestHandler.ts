@@ -14,7 +14,8 @@ export interface ContextMap {
 export type Field = {
     fullFieldPath: string,
     type?: any, // required for topmost fields only
-    resolveFunc: ResolveFunction };
+    resolveFunc?: ResolveFunction
+}
 
 export type ResolveFunction = (field: any, args: any, contextConst: any, contextVar: any) => void;
 
@@ -70,7 +71,7 @@ export class GqlRequestHandler {
             operationName = inboundObj.name?.value;
         }
 
-        // Parsing inbound query to obtain "this.actionTree"
+        // Parsing inbound query to obtain "this.typedFieldsTree"
         try {
             this.makeTypedFieldsTree(inboundObj);
         }
@@ -149,7 +150,8 @@ export class GqlRequestHandler {
                     if (!_.isNil(this.field?.type))
                         this.setUpmostFieldType();
                     else
-                        this.handleError(`*** Error on set upmost field type for field \"${fieldName}\". ` +
+                        this.handleError('*** Error on set upmost field type for field ' +
+                                             `\"${fieldName}\". ` +
                                              'Type name is not provided.');
                 }
                 else
@@ -197,7 +199,8 @@ export class GqlRequestHandler {
         }
     }
 
-    private pushToActionTree = (tree: any, fieldName: string, arrPath: Array<string>, typeName: string, isArray: boolean) =>
+    private pushToActionTree = (tree: any, fieldName: string, arrPath: Array<string>,
+                                typeName: string, isArray: boolean) =>
         tree.push({
             fieldName,
             arrPath,
@@ -293,38 +296,55 @@ export class GqlRequestHandler {
     }
 
     // Recursive
-    private execute = async (actionTreeItem: Array<any>) => {
-        for (let i = 0; i < actionTreeItem.length; i++) {
-            let field = actionTreeItem[i];
+    private execute = async (treeItem: Array<any>) => {
+        for (let i = 0; i < treeItem.length; i++) {
+            let field = treeItem[i];
             let fullFieldPath = Utils.composeFullFieldPath(field.arrPath);
             this.log(`${fullFieldPath}`);
             const resolvedField = this.gqlProvider.resolvedFields[fullFieldPath];
             try {
-                if (!_.isNil(resolvedField))
-                    await resolvedField.resolveFunc(field, field.args, this.contextConst, this.contextVar);
+                if (!_.isNil(resolvedField)) {
+                    // The field is explicitly registered as Resolved Field
+                    if (!_.isNil(resolvedField.resolveFunc))
+                        // Resolved Field has definition for ResolveFunc
+                        await resolvedField.resolveFunc(field, field.args, this.contextConst, this.contextVar);
+                    else
+                        // Resolved Field has NOT definition for ResolveFunc.
+                        // Implicit resolve function based on naming convention is used.
+                        await this.gqlProvider.resolveFunc(fullFieldPath,
+                                                        field, field.args, this.contextConst, this.contextVar);
+                }
                 else {
-                    const type = this.gqlProvider.findRegisteredType(field.typeName);
-                    if (!_.isNil(type)) {
-                        if (!_.isNil(type.resolveFunc))
-                            await type.resolveFunc(this.typedFieldsTree, field.args, this.contextConst, this.contextVar);
-                        else
-                            this.handleError(`*** Error on resolve function execution of type \"${type.type}\". ` +
-                                `Type \"${type.type}\" has no resolve function.`);
-                    }
-                    else {
-                        if (GqlRequestHandler.isSimpleType(field.typeName)) {
-                            //TODO
-                            // Field's type is not in the list - most probably it is simple type (string, number, boolean)
-                            this.log(`simple type ${field.typeName}`);
+                    // The field is NOT explicitly registered as Resolved Field
+                    if (! await this.gqlProvider.resolveFunc(fullFieldPath,
+                                                field, field.args, this.contextConst, this.contextVar)) {
+                        // No implicit resolve function for registered for given "fullFieldPath"
+                        const type = this.gqlProvider.findRegisteredType(field.typeName);
+                        if (!_.isNil(type)) {
+                            // Field's type is registered - it should be a complex type
+                            if (!_.isNil(type.resolveFunc))
+                                await type.resolveFunc(this.typedFieldsTree, field.args, this.contextConst,
+                                                       this.contextVar);
+                            else
+                                this.handleError('*** Error on resolve function execution of type ' +
+                                    `\"${type.type}\". ` +
+                                    `Type \"${type.type}\" has no resolve function.`);
                         }
-                        else
-                            this.handleError(`*** Error on resolve function execution of type \"${field.typeName}\". ` +
-                                `Type \"${field.typeName}\" is not registered.`);
+                        else {
+                            // Field's type is NOT registered - it should be a simple type (string, number, boolean)
+                            if (GqlRequestHandler.isSimpleType(field.typeName))
+                                this.log(`simple type ${field.typeName}`); //??
+                            else
+                                this.handleError('*** Error on resolve function execution of type '+
+                                    `\"${field.typeName}\". ` +
+                                    `Type \"${field.typeName}\" is not registered.`);
+                        }
                     }
                 }
             }
             catch (err) {
-                this.handleError(`*** Error on resolve function execution of field \"${fullFieldPath}\". ${err}`);
+                this.handleError('*** Error on resolve function execution of field ' +
+                                            `\"${fullFieldPath}\". ${err}`);
             }
 
             await this.execute(field.children);
