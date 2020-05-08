@@ -1,6 +1,8 @@
+import graphqlHTTP from "express-graphql";
+
 const graphql = require('graphql');
 const { GraphQLObjectType, GraphQLSchema, GraphQLID } = graphql;
-import { DocumentNode, GraphQLError } from 'graphql';
+import {buildSchema, DocumentNode, ExecutionArgs, GraphQLError, GraphQLResolveInfo} from 'graphql';
 import { parse } from 'graphql/language/parser';
 import _ from 'lodash';
 import { ILogger } from '../logger';
@@ -12,28 +14,34 @@ import { Utils } from './utils';
 export interface IGqlProvider {
     readonly types: Array<any>;
     readonly resolvedFields: ResolvedFieldsMap;
+    readonly withSchema: boolean;
     findRegisteredType(typeName: string): any;
     resolveFunc(fullFieldPath: string, field: any, args: any, contextConst: any, contextVar: any): Promise<boolean>;
+}
+
+export type ResolverFn = (parent: any, args: any, context: any, info: GraphQLResolveInfo) => any;
+
+export interface ResolverMap {
+    [fieldName: string]: ResolverFn;
 }
 
 export class GqlProvider implements GqlProvider {
     static readonly maxHandlerId = 1000;
 
-    readonly schema: any;
     readonly types = Array<any>();
     readonly resolvedFields: ResolvedFieldsMap = { };
     readonly contextConst: ContextMap = { };
     readonly typesCommon: GqlTypesCommon;
 
+    schema: any;
+    resolvers: ResolverMap = { };
     resolveFns: any;
 
     private currentHandlerId: number = 0;
 
-    constructor(private logger: ILogger, private withExecution: boolean = true) {
-        const config = new GraphQLObjectType({ name: 'Query' }).toConfig();
-        config.fields['_'] = GqlProvider.createFreshDummyField();
-        this.schema = new GraphQLSchema({ query: new GraphQLObjectType(config) });
+    public withSchema = true;
 
+    constructor(private logger: ILogger) {
         this.typesCommon = new GqlTypesCommon(this, logger);
     }
 
@@ -48,17 +56,16 @@ export class GqlProvider implements GqlProvider {
         return dummyField;
     }
 
-    validateFn = (schema: any, documentAST: DocumentNode, rules: ReadonlyArray<ValidationRule>) => true;
+    private validateFn = (schema: any, documentAST: DocumentNode, rules: ReadonlyArray<ValidationRule>) => true;
 
-    formatErrorFn = (error: GraphQLError) => this.logger.log(`*** Error: ${error}`);
+    private formatErrorFn = (error: GraphQLError) => this.logger.log(`*** Error: ${error}`);
 
-    executeFn = async (inboundObj: any): Promise<string> =>
+    private executeFn = async (inboundObj: any): Promise<string> =>
         await new GqlRequestHandler(
                         this.newHandlerId(),
                         this,
                         this.contextConst,
-                        this.logger,
-                        this.withExecution)
+                        this.logger)
             .executeFn(inboundObj);
 
     processSource = async (src: string): Promise<string> => {
@@ -84,8 +91,94 @@ export class GqlProvider implements GqlProvider {
     }
 
     registerTypes = (...arrArgs: Array<any>): GqlProvider => {
-        arrArgs?.forEach((args: any) => this.types.push(args));
+        arrArgs?.forEach((type: any) => this.types.push(type));
+
+        // Dummy schema generation
+        const config = new GraphQLObjectType({name: 'Query'}).toConfig();
+        config.fields['_'] = GqlProvider.createFreshDummyField();
+        this.schema = new GraphQLSchema({query: new GraphQLObjectType(config)});
+
+        this.withSchema = false;
         return this;
+    }
+
+    registerTypesAndCreateSchema = (...arrArgs: Array<any>): GqlProvider => {
+        arrArgs?.forEach((type: any) => this.types.push(type));
+
+        this.types.forEach((type: any) =>
+            this.logger.log(`\n${type.type}\n${GqlRequestHandler.jsonStringifyFormatted(type)}`));
+
+        this.schema = buildSchema(this.generateSchemaByRegisteredTypes());
+
+        this.withSchema = true;
+        return this;
+    }
+
+    private generateSchemaByRegisteredTypes = (): string => {
+        //Not Implemented yet
+        //TODO: add here schema generation based on this.types
+
+            //
+            // type Query {
+            //     me: User!
+            //     user(id: ID!): User
+            //     allUsers: [User]
+            //     search(term: String!): [SearchResult!]!
+            //     personChats(personName: String!): [Chat!]!
+            // }
+
+        return `
+            scalar Date
+    
+            schema {
+                query: Query1           
+            }
+            
+            type Query1 {
+                personChats(personName: String!): [Chat!]!
+                user(id: ID!): User
+            }
+            
+            type QuerySearch {
+                search(term: String!): [SearchResult!]!
+            }
+            
+            type QueryUser {
+                user(id: ID!): User
+            }
+            
+            enum Role {
+                USER,
+                ADMIN,
+            }
+            
+            interface Common {
+                id: Int!
+            }
+            
+            union SearchResult = User | Chat | ChatMessage
+            
+            type User implements Common {
+                id: Int!
+                name: String!
+                email: String!
+                role: Role!
+            }
+            
+            type Chat implements Common {
+                id: Int!
+                topic: String!
+                participants: [User!]!
+            }
+            
+            type ChatMessage implements Common {
+                id: Int!
+                text: String!
+                time: Date!
+                user: User!
+                chat: Chat!
+            }
+        `;
     }
 
     registerResolveFunctions = (resolveFns: any) => {
@@ -94,7 +187,13 @@ export class GqlProvider implements GqlProvider {
     }
 
     registerResolvedFields = (...arrArgs: Array<Field>): GqlProvider => {
-        arrArgs?.forEach((field: any) => this.resolvedFields[field.fullFieldPath] = field);
+        arrArgs?.forEach((field: any) => {
+            this.resolvedFields[field.fullFieldPath] = field;
+
+            this.resolvers[field.fullFieldPath] =
+                    async (parent: any, args: any, context: any, info: GraphQLResolveInfo) =>
+                        await this.executeFn(context.operation);
+        });
         return this;
     }
 
@@ -130,5 +229,26 @@ export class GqlProvider implements GqlProvider {
         }
 
         return false;
+    }
+
+    setGqlOptions = (): graphqlHTTP.Options => {
+        const options: graphqlHTTP.Options = {
+            schema: this.schema,
+            graphiql: true,
+            customFormatErrorFn: (error: GraphQLError) => this.formatErrorFn(error)
+        };
+
+        if (this.withSchema)
+            options.rootValue = this.resolvers;
+        else {
+            options.customExecuteFn = async (args: ExecutionArgs): Promise<any> =>
+                await this.executeFn(args.document.definitions[0]);
+
+            options.customValidateFn =
+                (schema, documentAST, validationRules): any =>
+                    this.validateFn(schema, documentAST, validationRules);
+        }
+
+        return options;
     }
 }

@@ -2,11 +2,11 @@ import express from 'express';
 import compression from 'compression';
 import cors from 'cors';
 import graphqlHTTP from 'express-graphql';
-import { DocumentNode, ExecutionArgs, GraphQLError, Source } from 'graphql';
+import { ExecutionArgs, GraphQLError } from 'graphql';
 import { GqlTypesCommon } from './gql_infra/gqlTypesCommon';
 import { Logger } from './logger';
 import { GqlProvider } from './gql_infra/gqlProvider';
-import { cachedResolveFns } from './resolve_funcs/cached/cachedDataResolveFuncs';
+import { cachedResolveFns, chats } from './resolve_funcs/cached/cachedDataResolveFuncs';
 import { sqlResolveFns, connectToSql } from './resolve_funcs/sql/sqlServerResolveFuncs';
 import { User, ChatMessage, Chat } from './types/types';
 import bodyParser from 'body-parser';
@@ -23,34 +23,6 @@ export const gqlTypesCommon = gqlProvider.typesCommon;
     server1.use('*', cors());
     server1.use(compression());
 
-    server1.use('/graphql', graphqlHTTP({
-        schema: gqlProvider.schema,  // schema stub
-        graphiql: true,
-
-        customParseFn: (source: Source): DocumentNode =>
-            gqlProvider.parseFn(source.body),
-
-        customExecuteFn: async (args: ExecutionArgs): Promise<any> =>
-            await gqlProvider.executeFn(args.document.definitions[0]),
-
-        customValidateFn: (schema, documentAST, validationRules): any =>
-            gqlProvider.validateFn(schema, documentAST, validationRules),
-
-        customFormatErrorFn: (error: GraphQLError) =>
-            gqlProvider.formatErrorFn(error),
-    }));
-
-    let port1 = 3000;
-    let address1 = `http://localhost:${port1}/graphql`;
-
-    try {
-        await server1.listen(port1);
-        logger.log(`\n--- GraphQL schemaless service is listening on ${address1}`);
-    }
-    catch (err) {
-        logger.log(`\n*** Error to listen on ${address1}. ${err}`)
-    }
-
     let resolveFns: any;
     switch (storage) {
         case "SqlServer":
@@ -65,7 +37,7 @@ export const gqlTypesCommon = gqlProvider.typesCommon;
     // Settings for gqlProvider.
     // Placed after start listening for test purposes.
     gqlProvider
-        .registerTypes(User, ChatMessage, Chat)
+        .registerTypesAndCreateSchema(User, ChatMessage, Chat)
         .registerResolveFunctions(resolveFns)
         .registerResolvedFields(
             //-- user ---------------------------------------------------------------
@@ -86,7 +58,7 @@ export const gqlTypesCommon = gqlProvider.typesCommon;
                     GqlTypesCommon.setFilter(field.fieldName, filterArgs, contextVar);
 
                     await gqlProvider.resolveFunc('personChats.messages',
-                                                 field, args, contextConst, contextVar);
+                        field, args, contextConst, contextVar);
                 }
             },
             {
@@ -95,7 +67,7 @@ export const gqlTypesCommon = gqlProvider.typesCommon;
                     const fieldName = field.arrPath[1];
 
                     await gqlProvider.resolveFunc('personChats.messages.author',
-                                                          field, args, contextConst, contextVar);
+                        field, args, contextConst, contextVar);
 
                     GqlTypesCommon.applyFilter(fieldName, contextVar);
                 }
@@ -110,6 +82,19 @@ export const gqlTypesCommon = gqlProvider.typesCommon;
             //-----------------------------------------------------------------------
         );
 
+    server1.use('/graphql', graphqlHTTP(gqlProvider.setGqlOptions()));
+
+    let port1 = 3000;
+    let address1 = `http://localhost:${port1}/graphql`;
+
+    try {
+        await server1.listen(port1);
+        logger.log(`\n--- GraphQL schemaless service is listening on ${address1}`);
+    }
+    catch (err) {
+        logger.log(`\n*** Error to listen on ${address1}. ${err}`)
+    }
+
 
     // Process source string
 
@@ -122,20 +107,6 @@ export const gqlTypesCommon = gqlProvider.typesCommon;
                   name
                   email
                 }
-                messages {
-                  author {
-                    name
-                    role
-                  }
-                  text
-                  time
-                }
-              }
-            
-              user(id: 1) {
-                name
-                email
-                role
               }
             }
         `;

@@ -2,6 +2,7 @@ import _ from 'lodash';
 import { Utils } from './utils';
 import { ILogger } from '../logger';
 import { IGqlProvider } from './gqlProvider';
+import {ClassChat, ClassUser, User} from "../types/types";
 
 export interface ResolvedFieldsMap {
     [fullFieldPath: string]: Field;
@@ -51,12 +52,12 @@ export class GqlRequestHandler {
         private id: string,
         private gqlProvider: IGqlProvider,
         private contextConst: any,
-        private logger: ILogger,
-        private withExecution: boolean = true)
+        private logger: ILogger/*,
+        private withExecution: boolean = true*/)
     {
     }
 
-    executeFn = async (inboundObj: any): Promise<string> => {
+    executeFn = async (inboundObj: any): Promise<any> => {
         // Initialize appropriate variables for new query
         this.errors = new Array<string>();
         this.typedFieldsTree = new Array<any>();
@@ -83,30 +84,27 @@ export class GqlRequestHandler {
         const results = new Array<any>();
         if (this.isErrorsFree()) {
             this.log('-- Action Tree -----------------------------------');
-            output = GqlRequestHandler.createOutput(this.typedFieldsTree, 'typed_fields_tree');
-            this.log(`${GqlRequestHandler.jsonStringifyFormatted(output)}`);
+            this.log(`${GqlRequestHandler.jsonStringifyFormatted(this.createTypedFieldsTreeOutput())}`);
 
-            if (this.withExecution) {
-                // Actual data processing according to this.actionTree
-                this.log('-- Execution Trace -------------------------------');
-                try {
-                    await this.execute(this.typedFieldsTree);
-                }
-                catch (err) {
-                    this.handleError(`*** Error on executeActionTree: ${err}`);
-                }
+            // Actual data processing according to this.actionTree
+            this.log('-- Execution Trace -------------------------------');
+            try {
+                await this.execute(this.typedFieldsTree);
+            }
+            catch (err) {
+                this.handleError(`*** Error on executeActionTree: ${err}`);
+            }
 
-                if (this.isErrorsFree()) {
-                    this.typedFieldsTree.forEach((item: any) => {
-                        let a = this.contextVar[item.fieldName];
-                        if (operation === Operation.query)
-                            a = a[0][0];
-                        results.push(a)
-                    });
+            if (this.isErrorsFree()) {
+                this.typedFieldsTree.forEach((item: any) => {
+                    let a = this.contextVar[item.fieldName];
+                    if (operation === Operation.query)
+                        a = a[0][0];
 
-                    output = GqlRequestHandler.createOutput(results,
-                                              operationName?.length > 0 ? operationName : 'data');
-                }
+                    results.push(a)
+                });
+
+                output = this.createOutput(results, operationName?.length > 0 ? operationName : 'data');
             }
         }
 
@@ -268,12 +266,14 @@ export class GqlRequestHandler {
         return true;
     }
 
-    private static jsonStringifyFormatted = (obj: any): string =>
+    static jsonStringifyFormatted = (obj: any): string =>
         //JSON.stringify(jsObj, null, "\t"); // stringify with tabs inserted at each level
         //JSON.stringify(jsObj, null, 4);    // stringify with 4 spaces at each level
         JSON.stringify(obj, null, '\t')
 
-    private static createOutput = (arr: Array<any>, outerObjectName: string): any => {
+    private createTypedFieldsTreeOutput = (): any => {
+        const arr = this.typedFieldsTree;
+        const outerObjectName = 'typed_fields_tree';
         let data: any = { };
         switch (arr.length) {
             case 0:  return 'Empty';
@@ -282,6 +282,23 @@ export class GqlRequestHandler {
         }
 
         return { [outerObjectName]: data };
+    }
+
+    private createOutput = (arr: Array<any>, outerObjectName: string): any => {
+        let data: any = { };
+        if (this.gqlProvider.withSchema) {
+            const item = arr[0];
+            const propName = Object.keys(item)[0];
+            data = item[propName];
+        }
+        else
+            for (let i = 0; i < arr.length; i++) {
+                const item = arr[i];
+                const propName = Object.keys(item)[0];
+                data[propName] = item[propName];
+            }
+
+        return data;
     }
 
     private static getFullFieldPath = (prevPath: string, fieldName: string): string => {

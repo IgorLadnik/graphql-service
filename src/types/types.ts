@@ -29,7 +29,8 @@ export class ClassChatMessage extends ClassCommon {
         id: number = 0,
         public text: string = '',
         public time: string = '',
-        public author: ClassUser = User
+        public author: ClassUser = User,
+        public chat: ClassChat = Chat
     ) {
         super('ChatMessage', id);
     }
@@ -42,7 +43,7 @@ export class ClassChat extends ClassCommon {
         id: number = 0,
         public topic: string = '',
         public participants: Array<ClassUser> = [User],
-        public messages: Array<ClassChatMessage> = [ChatMessage]
+        //public messages: Array<ClassChatMessage> = [ChatMessage]
     ) {
         super('Chat', id);
     }
