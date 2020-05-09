@@ -131,30 +131,7 @@ export class GqlProvider implements GqlProvider {
         return this;
     }
 
-    // callbackToCreateQueryType = (dctGqlTypes: any): any => {
-    //     return new GraphQLObjectType({
-    //         name: 'Query',
-    //         fields: {
-    //             user: {
-    //                 type: dctGqlTypes['User'],
-    //                 args: {
-    //                     id: { type: GraphQLInt }
-    //                 },
-    //             },
-    //             personChats: {
-    //                 type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(dctGqlTypes['Chat']))),
-    //                 args: {
-    //                     personName: { type: GraphQLString }
-    //                 },
-    //             }
-    //         }
-    //     });
-    // }
-
     private generateSchemaByRegisteredTypes = (): any => {
-        //Not Implemented yet
-        //TODO: add here schema generation based on this.types
-
             //
             // type Query {
             //     me: User!
