@@ -119,39 +119,39 @@ export const sqlResolveFns = {
         );
     },
 
-    query_personChats_messages: async (field: any, args: any, contextConst: any, contextVar: any,
-                                           parent: any): Promise<Array<any>> => {
-        const cxtKey = '_level1_messages';
-        return await sqlResolveFns.sqlQuery('query_personChats_messages',
-                cxtKey, field, args, contextConst, contextVar, parent,
-            () => {
-                GqlTypesCommon.updateFieldTypeFilter(field, contextVar);
-                const queryArgs = GqlTypesCommon.getQueryArgs(field);
-                const strChatIds = contextVar['_level0_chats']?.map((c: any) => c.id)?.toString();
-                return `SELECT * FROM ChatMessages WHERE chatId in (${strChatIds})`;
-            },
-            () => {
-                GqlTypesCommon.setFilter(
-                    'ChatMessage', ['id', 'text', 'time', 'authorId', 'chatId'], contextVar);
-                return _.filter(contextVar[cxtKey], (item: any) => item.chatId === parent.id);
-            }
-        );
-    },
-
-    query_personChats_messages_author: async (field: any, args: any, contextConst: any, contextVar: any,
-                                                  parent: any): Promise<Array<any>> => {
-        const cxtKey = '_level2_messages_author';
-        return await sqlResolveFns.sqlQuery('query_personChats_messages_author',
-                cxtKey, field, args, contextConst, contextVar, parent,
-            () => {
-                GqlTypesCommon.updateFieldTypeFilter(field, contextVar);
-                const queryArgs = GqlTypesCommon.getQueryArgs(field);
-                const strAuthorIds = contextVar['_level1_messages'].map((m: any) => m.authorId).toString();
-                return `SELECT id, ${queryArgs} FROM Users WHERE id in (${strAuthorIds})`;
-             },
-            () => _.filter(contextVar[cxtKey], (item: any) => item.id === parent.authorId)
-        );
-    },
+    // query_personChats_messages: async (field: any, args: any, contextConst: any, contextVar: any,
+    //                                        parent: any): Promise<Array<any>> => {
+    //     const cxtKey = '_level1_messages';
+    //     return await sqlResolveFns.sqlQuery('query_personChats_messages',
+    //             cxtKey, field, args, contextConst, contextVar, parent,
+    //         () => {
+    //             GqlTypesCommon.updateFieldTypeFilter(field, contextVar);
+    //             const queryArgs = GqlTypesCommon.getQueryArgs(field);
+    //             const strChatIds = contextVar['_level0_chats']?.map((c: any) => c.id)?.toString();
+    //             return `SELECT * FROM ChatMessages WHERE chatId in (${strChatIds})`;
+    //         },
+    //         () => {
+    //             GqlTypesCommon.setFilter(
+    //                 'ChatMessage', ['id', 'text', 'time', 'authorId', 'chatId'], contextVar);
+    //             return _.filter(contextVar[cxtKey], (item: any) => item.chatId === parent.id);
+    //         }
+    //     );
+    // },
+    //
+    // query_personChats_messages_author: async (field: any, args: any, contextConst: any, contextVar: any,
+    //                                               parent: any): Promise<Array<any>> => {
+    //     const cxtKey = '_level2_messages_author';
+    //     return await sqlResolveFns.sqlQuery('query_personChats_messages_author',
+    //             cxtKey, field, args, contextConst, contextVar, parent,
+    //         () => {
+    //             GqlTypesCommon.updateFieldTypeFilter(field, contextVar);
+    //             const queryArgs = GqlTypesCommon.getQueryArgs(field);
+    //             const strAuthorIds = contextVar['_level1_messages'].map((m: any) => m.authorId).toString();
+    //             return `SELECT id, ${queryArgs} FROM Users WHERE id in (${strAuthorIds})`;
+    //          },
+    //         () => _.filter(contextVar[cxtKey], (item: any) => item.id === parent.authorId)
+    //     );
+    // },
 
     //-- Mutations ----------------------------------------------------------------------------
 

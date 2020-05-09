@@ -98,7 +98,7 @@ export const gqlTypesCommon = gqlProvider.typesCommon;
     // Process source string
 
     const src = `
-        query TheQuery {
+        query {
               personChats(personName: "Rachel") {
                 id
                 topic
@@ -129,9 +129,10 @@ export const gqlTypesCommon = gqlProvider.typesCommon;
 
     server2.post('/', async (req: any, res: any) => {
         let output = 'No result';
-        if (req.headers['content-type'] === 'text/plain')
+        if (req.headers['content-type'] === 'text/plain') {
+            logger.log(`\nreq.body\n${req.body}`);
             output = await gqlProvider.processSource(req.body);
-
+        }
         res.send(output);
     });
 
