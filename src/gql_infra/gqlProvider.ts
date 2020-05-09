@@ -1,5 +1,3 @@
-import graphqlHTTP from "express-graphql";
-
 const graphql = require('graphql');
 const { GraphQLObjectType, GraphQLSchema, GraphQLID } = graphql;
 import {buildSchema, DocumentNode, ExecutionArgs, GraphQLError, GraphQLResolveInfo} from 'graphql';
@@ -10,6 +8,7 @@ import { ValidationRule } from 'graphql/validation/ValidationContext';
 import { GqlRequestHandler, Field, ContextMap, ResolvedFieldsMap } from './gqlRequestHandler';
 import { GqlTypesCommon } from './gqlTypesCommon';
 import { Utils } from './utils';
+import graphqlHTTP from 'express-graphql';
 
 export interface IGqlProvider {
     readonly types: Array<any>;
