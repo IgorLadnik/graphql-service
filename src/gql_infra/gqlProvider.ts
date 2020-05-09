@@ -137,15 +137,7 @@ export class GqlProvider implements GqlProvider {
                 personChats(personName: String!): [Chat!]!
                 user(id: ID!): User
             }
-            
-            type QuerySearch {
-                search(term: String!): [SearchResult!]!
-            }
-            
-            type QueryUser {
-                user(id: ID!): User
-            }
-            
+                      
             enum Role {
                 USER,
                 ADMIN,
