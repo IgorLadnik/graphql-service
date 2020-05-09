@@ -107,13 +107,13 @@ export class GqlProvider implements GqlProvider {
         this.types.forEach((type: any) =>
             this.logger.log(`\n${type.type}\n${GqlRequestHandler.jsonStringifyFormatted(type)}`));
 
-        this.schema = buildSchema(this.generateSchemaByRegisteredTypes());
+        this.schema = this.generateSchemaByRegisteredTypes();
 
         this.withSchema = true;
         return this;
     }
 
-    private generateSchemaByRegisteredTypes = (): string => {
+    private generateSchemaByRegisteredTypes = (): any => {
         //Not Implemented yet
         //TODO: add here schema generation based on this.types
 
@@ -126,7 +126,7 @@ export class GqlProvider implements GqlProvider {
             //     personChats(personName: String!): [Chat!]!
             // }
 
-        return `
+        const strSchema = `
             scalar Date
     
             schema {
@@ -170,6 +170,8 @@ export class GqlProvider implements GqlProvider {
                 chat: Chat!
             }
         `;
+
+        return buildSchema(strSchema);
     }
 
     registerResolveFunctions = (resolveFns: any) => {
