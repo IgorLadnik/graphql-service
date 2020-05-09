@@ -9,6 +9,18 @@ import { cachedResolveFns, chats } from './resolve_funcs/cached/cachedDataResolv
 import { sqlResolveFns, connectToSql } from './resolve_funcs/sql/sqlServerResolveFuncs';
 import { User, ChatMessage, Chat } from './types/types';
 import bodyParser from 'body-parser';
+const graphql = require('graphql');
+const {
+    GraphQLSchema,
+    GraphQLObjectType,
+    GraphQLID,
+    GraphQLString,
+    GraphQLBoolean,
+    GraphQLInt,
+    GraphQLFloat,
+    GraphQLNonNull,
+    GraphQLList
+} = graphql;
 
 const storage = process.env.GqlSchemalessServiceStorage;
 
@@ -31,6 +43,26 @@ export const gqlTypesCommon = gqlProvider.typesCommon;
         default:
             resolveFns = cachedResolveFns;
             break;
+    }
+
+    gqlProvider.callbackToCreateQueryType = (gqlTypes: any): any => {
+        return new GraphQLObjectType({
+            name: 'Query',
+            fields: {
+                user: {
+                    type: gqlTypes['User'],
+                    args: {
+                        id: { type: GraphQLInt }
+                    },
+                },
+                personChats: {
+                    type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(gqlTypes['Chat']))),
+                    args: {
+                        personName: { type: GraphQLString }
+                    },
+                }
+            }
+        });
     }
 
     // Settings for gqlProvider.

@@ -24,6 +24,18 @@ export class ClassUser extends ClassCommon {
 
 export const User = new ClassUser();
 
+export class ClassChat extends ClassCommon {
+    constructor(
+        id: number = 0,
+        public topic: string = '',
+        public participants: Array<ClassUser> = [User]
+    ) {
+        super('Chat', id);
+    }
+}
+
+export const Chat = new ClassChat();
+
 export class ClassChatMessage extends ClassCommon {
     constructor(
         id: number = 0,
@@ -37,19 +49,6 @@ export class ClassChatMessage extends ClassCommon {
 }
 
 export const ChatMessage = new ClassChatMessage();
-
-export class ClassChat extends ClassCommon {
-    constructor(
-        id: number = 0,
-        public topic: string = '',
-        public participants: Array<ClassUser> = [User],
-        //public messages: Array<ClassChatMessage> = [ChatMessage]
-    ) {
-        super('Chat', id);
-    }
-}
-
-export const Chat = new ClassChat();
 
 export const Role = {
     User: 'USER',

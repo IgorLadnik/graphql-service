@@ -1,6 +1,16 @@
 const graphql = require('graphql');
-const { GraphQLObjectType, GraphQLSchema, GraphQLID } = graphql;
-import {buildSchema, DocumentNode, ExecutionArgs, GraphQLError, GraphQLResolveInfo} from 'graphql';
+const {
+    GraphQLSchema,
+    GraphQLObjectType,
+    GraphQLID,
+    GraphQLString,
+    GraphQLBoolean,
+    GraphQLInt,
+    GraphQLFloat,
+    GraphQLNonNull,
+    GraphQLList
+} = graphql;
+import { buildSchema, DocumentNode, ExecutionArgs, GraphQLError, GraphQLResolveInfo } from 'graphql';
 import { parse } from 'graphql/language/parser';
 import _ from 'lodash';
 import { ILogger } from '../logger';
@@ -38,7 +48,15 @@ export class GqlProvider implements GqlProvider {
 
     private currentHandlerId: number = 0;
 
-    public withSchema = true;
+    withSchema = true;
+
+    callbackToCreateQueryType: Function;
+
+    private static scalarTypeToGql: any = {
+        boolean: GraphQLBoolean,
+        number: GraphQLInt,
+        string: GraphQLString
+    }
 
     constructor(private logger: ILogger) {
         this.typesCommon = new GqlTypesCommon(this, logger);
@@ -113,6 +131,26 @@ export class GqlProvider implements GqlProvider {
         return this;
     }
 
+    // callbackToCreateQueryType = (dctGqlTypes: any): any => {
+    //     return new GraphQLObjectType({
+    //         name: 'Query',
+    //         fields: {
+    //             user: {
+    //                 type: dctGqlTypes['User'],
+    //                 args: {
+    //                     id: { type: GraphQLInt }
+    //                 },
+    //             },
+    //             personChats: {
+    //                 type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(dctGqlTypes['Chat']))),
+    //                 args: {
+    //                     personName: { type: GraphQLString }
+    //                 },
+    //             }
+    //         }
+    //     });
+    // }
+
     private generateSchemaByRegisteredTypes = (): any => {
         //Not Implemented yet
         //TODO: add here schema generation based on this.types
@@ -125,7 +163,7 @@ export class GqlProvider implements GqlProvider {
             //     search(term: String!): [SearchResult!]!
             //     personChats(personName: String!): [Chat!]!
             // }
-
+        /*
         const strSchema = `
             scalar Date
     
@@ -172,6 +210,66 @@ export class GqlProvider implements GqlProvider {
         `;
 
         return buildSchema(strSchema);
+        */
+
+        // Multi-pass: graphQL type objects from registered type objects
+        const dctGqlTypes: any = { };
+        while (Object.keys(dctGqlTypes).length < this.types.length)
+            this.types.forEach((type: any) => GqlProvider.getGqlTypeFromRegisteredType(type, dctGqlTypes));
+
+        return new graphql.GraphQLSchema({ query: this.callbackToCreateQueryType(dctGqlTypes) });
+    }
+
+    private static getGqlTypeFromRegisteredType = (type: any, dctGqlTypes: any) => {
+        const name = type.type;
+        if (!_.isNil(dctGqlTypes[name]))
+            return;
+
+        const fields: any = { };
+        const arrProp = Object.keys(type);
+        for (let i = 0; i < arrProp.length; i++) {
+            const property =  arrProp[i];
+            if (property === 'type')
+                continue;
+
+            let obj: any;
+            let isArray = false;
+            if (_.isArray(type[property])) {
+                isArray = true;
+                obj = type[property][0];
+            }
+            else
+                obj = type[property];
+
+            const theType = typeof(obj);
+
+            if (theType === 'function')
+                continue;
+
+            let gqlType = GqlProvider.scalarTypeToGql[theType];
+            if (_.isNil(gqlType)) {
+                // Non-scalar type
+                gqlType = dctGqlTypes[obj.type];
+                if (_.isNil(gqlType))
+                    return;
+            }
+
+            if (isArray)
+                gqlType = new GraphQLList(gqlType);
+
+
+            fields[property] = { type: gqlType };
+        }
+
+        dctGqlTypes[name] = new GraphQLObjectType({ name, fields });
+
+        // const userType = new GraphQLObjectType({
+        //     name: 'User',
+        //     fields: {
+        //         id: { type: GraphQLString },
+        //         name: { type: GraphQLString },
+        //     }
+        // });
     }
 
     registerResolveFunctions = (resolveFns: any) => {
