@@ -93,17 +93,17 @@ export const gqlTypesCommon = gqlProvider.typesCommon;
             //             field, args, contextConst, contextVar);
             //     }
             // },
-            {
-                fullFieldPath: 'personChats.messages.author',
-                resolveFunc: async (field, args, contextConst, contextVar) => {
-                    const fieldName = field.arrPath[1];
-
-                    await gqlProvider.resolveFunc('personChats.messages.author',
-                        field, args, contextConst, contextVar);
-
-                    GqlTypesCommon.applyFilter(fieldName, contextVar);
-                }
-            },
+            // {
+            //     fullFieldPath: 'personChats.messages.author',
+            //     resolveFunc: async (field, args, contextConst, contextVar) => {
+            //         const fieldName = field.arrPath[1];
+            //
+            //         await gqlProvider.resolveFunc('personChats.messages.author',
+            //             field, args, contextConst, contextVar);
+            //
+            //         GqlTypesCommon.applyFilter(fieldName, contextVar);
+            //     }
+            // },
 
             //-- addMessaqe ---------------------------------------------------------
             {
