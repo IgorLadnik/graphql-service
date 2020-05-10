@@ -181,7 +181,7 @@ export const gqlTypesCommon = gqlProvider.typesCommon;
 
 /* Requests
 
-query TheQuery {
+query {
   personChats(personName: "Rachel") {
     id
     topic
@@ -189,16 +189,10 @@ query TheQuery {
       name
       email
     }
-    messages {
-      author {
-        name
-       	role
-      }
-      text
-      time
-    }
   }
+}
 
+query {
   user(id: 1) {
     name
     email
@@ -206,7 +200,7 @@ query TheQuery {
   }
 }
 
-mutation TheMutation {
+mutation {
   addMessage(
     chat: "topic2",
     text: "some text",
