@@ -194,7 +194,7 @@ export class GqlProvider implements GqlProvider {
         while (Object.keys(dctGqlTypes).length < this.types.length)
             this.types.forEach((type: any) => GqlProvider.getGqlTypeFromRegisteredType(type, dctGqlTypes));
 
-        return new graphql.GraphQLSchema({ query: this.callbackToCreateQueryType(dctGqlTypes) });
+        return new GraphQLSchema({ query: this.callbackToCreateQueryType(dctGqlTypes) });
     }
 
     private static getGqlTypeFromRegisteredType = (type: any, dctGqlTypes: any) => {
