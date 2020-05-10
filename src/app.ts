@@ -2,7 +2,6 @@ import express from 'express';
 import compression from 'compression';
 import cors from 'cors';
 import graphqlHTTP from 'express-graphql';
-import { GqlTypesCommon } from './gql_infra/gqlTypesCommon';
 import { Logger } from './logger';
 import { GqlProvider } from './gql_infra/gqlProvider';
 import { cachedResolveFns, chats } from './resolve_funcs/cached/cachedDataResolveFuncs';
