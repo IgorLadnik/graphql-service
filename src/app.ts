@@ -83,16 +83,16 @@ export const gqlTypesCommon = gqlProvider.typesCommon;
                 fullFieldPath: 'personChats',
                 type: [Chat], // required for topmost fields only
             },
-            {
-                fullFieldPath: 'personChats.messages',
-                resolveFunc: async (field, args, contextConst, contextVar) => {
-                    const filterArgs = field.children.map((c: any) => c.fieldName);
-                    GqlTypesCommon.setFilter(field.fieldName, filterArgs, contextVar);
-
-                    await gqlProvider.resolveFunc('personChats.messages',
-                        field, args, contextConst, contextVar);
-                }
-            },
+            // {
+            //     fullFieldPath: 'personChats.messages',
+            //     resolveFunc: async (field, args, contextConst, contextVar) => {
+            //         const filterArgs = field.children.map((c: any) => c.fieldName);
+            //         GqlTypesCommon.setFilter(field.fieldName, filterArgs, contextVar);
+            //
+            //         await gqlProvider.resolveFunc('personChats.messages',
+            //             field, args, contextConst, contextVar);
+            //     }
+            // },
             {
                 fullFieldPath: 'personChats.messages.author',
                 resolveFunc: async (field, args, contextConst, contextVar) => {
