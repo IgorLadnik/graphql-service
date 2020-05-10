@@ -1,36 +1,21 @@
 ## Problem
 
-The task stated (as I understood it) in ideal form was as following:
-Create Web server that will be able to accept and process any 
-(meaning without providing schema upfront) *graphQL* (referred below as *GQL*) queries. 
+*graphQL* (referred below as *GQL*) schema has to be generated at runtime by ontology types on the start of service.
 
 ## What Does It Do?
 
-This code demonstrates an approach to a "schemaless" GQL.
+This software may operate in two modes, namely,
 
-Normally, usage of GQL implies submission of GQL schema before start of the server.
-Such a schema is fixed and cannot be changed while the server is running.
-The schema restricts inbound queries.
+- with a dynamically generated schema, and
+- without a schema at all (schemaless mode). 
 
-The main goal of the project is to make GQL Web server as flexible as possible.
-To achieve this, first we need to allow any formally valid GQL query.
-So, in contrast to normal GQL usage, the project does not use GQL schema 
-(to be precise, a meaningless schema stub is used to satisfy **graphqlHTTP** GQL infrastructure object)
-and therefore is open to any inbound GQL query.
-This is attained with implementation of hook methods of **graphqlHTTP** object (please see details below).
-These methods block usage of the schema, but at the same time deny standard way for parsing and resolve functions call.
-So, custom mechanism for parsing and call of resolve functions is implemented.
-Second, attempt is made to provide some general resolve functions or at least boilerplate for them.
+Currently, each mode requires a separate endpoint.
 
-Schemaless approach gives developer more freedom to define data types.
-It is assumed that the server receives those types on its start before starting to listen for queries 
-(actually type may be submitted at runtime as well, before it's usage in a query).
-
-It is a Web server which
-- receives GQL queries,
-- parses it to a typed hierarchy tree (**typedFieldsTree** member of class **GqlRequestHandle**; 
-output to console by default), and
-- executes queries to a simple SQL Server database with an attempt to generalize resolve functions.
+In the former mode GQL schema is generated at the start of service. 
+In the latter mode this step is skipped. 
+For GQL requests a schema stub is provided.
+It is also possible to use the same processing procedure for an ordinary REST request providing 
+GQL request as its payload.   
 
 GQL infrastructure consists of main classes 
 - **GqlProvider** (file *gqlProvider.ts*),
@@ -39,58 +24,32 @@ GQL infrastructure consists of main classes
 
 These classes are responsible for parsing incoming request and provide mechanism for execution of resolve functions.
 
-File *types.ts* contains types objects.
+File *types.ts* contains ontology types objects.
 
-## Going Schemaless
+Class **GqlProvider** provides implementation of the **graphqlHTTP** hook functions
+**rootValue**, **customExecuteFn**, **customValidateFn** and optionally **customParseFn**.
 
-In order to be able to process any query hook functions of **graphqlHTTP** are intercepted:  
- 
-	server1.use('/graphql', graphqlHTTP({
-	  schema: gqlProvider.schema, // schema stub
-	  graphiql: true,
-	  
-	  customParseFn: (source: Source): DocumentNode =>
-          GqlProvider.parseFn(source.body),
 
-	  customExecuteFn: async (args: ExecutionArgs): Promise<any> =>
-          await gqlProvider.executeFn(args.document.definitions[0]),
+    setGqlOptions = (): graphqlHTTP.Options => {
+        const options: graphqlHTTP.Options = {
+            schema: this.schema,
+            graphiql: true,
+            customFormatErrorFn: (error: GraphQLError) => this.formatErrorFn(error)
+        };
 
-	  customValidateFn: (schema, documentAST, validationRules): any =>
-          gqlProvider.validateFn(schema, documentAST, validationRules),
+        if (this.withSchema)
+            options.rootValue = this.resolvers;
+        else {
+            options.customExecuteFn = async (args: ExecutionArgs): Promise<any> =>
+                await this.executeFn(args.document.definitions[0]);
 
-	  customFormatErrorFn: (error: GraphQLError) =>
-          gqlProvider.formatErrorFn(error),
-	})); 
-	
-Class **GqlProvider** provides implementation of the hook functions.
-First, its instance is created:
-	
-	const gqlProvider = new GqlProvider(logger);
+            options.customValidateFn =
+                (schema, documentAST, validationRules): any =>
+                    this.validateFn(schema, documentAST, validationRules);
+        }
 
-Then type objects of domain entities (file *types.ts*) and resolve functions should be registered with this object:
-
-	gqlProvider
-        .registerTypes(User, ChatMessage, Chat)
-        .registerResolveFunctions(resolveFns)
-        .registerResolvedFields(
-            {
-                fullFieldPath: 'personChats',
-                type: [Chat], // required for topmost fields only
-            },
-            {
-                fullFieldPath: 'personChats.messages',
-                resolveFunc: async (field, args, contextConst, contextVar) => {
-                        const filterArgs = field.children.map((c: any) => c.fieldName);
-                        GqlTypesCommon.setFilter(field.fieldName, filterArgs, contextVar);
-    
-                        await gqlProvider.resolveFunc('personChats.messages',
-                                                     field, args, contextConst, contextVar);
-                },
-	        }
-            {
-                //.....
-            },        
-        );
+        return options;
+    }
 		
 Registered resolved field provides full field path, and the field resolve function.
 The resolve function may be defined implicitly in registered **resolveFns** based on naming convention. 
@@ -176,6 +135,7 @@ It may use a local SQL Server in stead (to switch we have to install environment
 
 This PoC project 
 
+- automatically generates GQL schema out of ontology types at the start of service,
 - supports schemaless GQL Web server with requests both as GQL and plain text,
 - provides uniform infrastructure for preparation of types hierarchy tree and activation of resolve functions,
 - illustrates resolve functions for test cached data and SQL Server storage.
