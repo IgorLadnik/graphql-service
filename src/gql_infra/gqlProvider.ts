@@ -234,7 +234,6 @@ export class GqlProvider implements GqlProvider {
             if (isArray)
                 gqlType = new GraphQLList(gqlType);
 
-
             fields[property] = { type: gqlType };
         }
 
