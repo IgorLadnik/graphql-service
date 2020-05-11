@@ -57,6 +57,8 @@ export const sqlResolveFns = {
         return retVal;
     },
 
+    //-- Queries -----------------------------------------------------------------------------------
+
     // query_dummy: async (field: any, args: any, contextConst: any, contextVar: any,
     //                     parent: any): Promise<Array<any>> => {
     //     let retVal: any;
@@ -68,7 +70,7 @@ export const sqlResolveFns = {
     //     return retVal;
     // },
 
-    //-- Queries ----------------------------------------------------------------------------
+    // -- query: user ------------------------------------------------------------------------------
 
     query_user: async (field: any, args: any, contextConst: any, contextVar: any,
                                 parent: any): Promise<Array<any>> => {
@@ -84,6 +86,8 @@ export const sqlResolveFns = {
         );
     },
 
+    // -- query: personChats ------------------------------------------------------------------------
+
     query_personChats: async (field: any, args: any, contextConst: any, contextVar: any,
                                   parent: any): Promise<Array<any>> => {
         const cxtKey = '_level0_chats';
@@ -91,6 +95,7 @@ export const sqlResolveFns = {
                 cxtKey, field, args, contextConst, contextVar, parent,
             () => {
                 GqlTypesCommon.updateFieldTypeFilter(field, contextVar);
+                contextVar[`Chat${GqlTypesCommon.suffixPropsFilter}`] = ['id', 'topic'];
                 return `SELECT * FROM Chats WHERE id in
                           (SELECT chatId FROM Participants WHERE userId in
                               (SELECT id FROM Users WHERE name = '${args.personName}'))`;
@@ -119,7 +124,17 @@ export const sqlResolveFns = {
         );
     },
 
-    // query_personChats_messages: async (field: any, args: any, contextConst: any, contextVar: any,
+    // // -- query: personChatsWithMessages-----------------------------------------------------------------
+    //
+    // query_personChatsWithMessages: async (field: any, args: any, contextConst: any, contextVar: any, parent: any) =>
+    //     await sqlResolveFns.query_personChats(field, args, contextConst, contextVar, parent),
+    //
+    // query_personChatsWithMessages_participants: async (field: any, args: any, contextConst: any, contextVar: any,
+    //                                                    parent: any): Promise<Array<any>> =>
+    //     await sqlResolveFns.query_personChats_participants(field, args, contextConst, contextVar, parent),
+    //
+    //
+    // query_personChatsWithMessages_messages: async (field: any, args: any, contextConst: any, contextVar: any,
     //                                        parent: any): Promise<Array<any>> => {
     //     const cxtKey = '_level1_messages';
     //     return await sqlResolveFns.sqlQuery('query_personChats_messages',
@@ -138,7 +153,7 @@ export const sqlResolveFns = {
     //     );
     // },
     //
-    // query_personChats_messages_author: async (field: any, args: any, contextConst: any, contextVar: any,
+    // query_personChatsWithMessages_messages_author: async (field: any, args: any, contextConst: any, contextVar: any,
     //                                               parent: any): Promise<Array<any>> => {
     //     const cxtKey = '_level2_messages_author';
     //     return await sqlResolveFns.sqlQuery('query_personChats_messages_author',

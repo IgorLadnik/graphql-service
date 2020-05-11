@@ -56,7 +56,7 @@ export const cachedResolveFns = {
         return results;
     },
 
-    //-- Queries ----------------------------------------------------------------------------
+    //-- Queries ----------------------------------------------------------------------------------
 
     // query_dummy: async (field: any, args: any, contextConst: any, contextVar: any,
     //                        parent: any): Promise<Array<any>> => {
@@ -69,6 +69,8 @@ export const cachedResolveFns = {
     //     return retVal;
     // },
 
+    // -- query: user ------------------------------------------------------------------------------
+
     query_user: async (field: any, args: any, contextConst: any, contextVar: any,
                            parent: any): Promise<Array<any>> => {
         if (_.isNil(parent))
@@ -79,13 +81,49 @@ export const cachedResolveFns = {
         return await cachedResolveFns.getObjects(users, 'id', [args.id]);
     },
 
+    // -- query: message ------------------------------------------------------------------------------
+
+    query_message: async (field: any, args: any, contextConst: any, contextVar: any,
+                                                   parent: any): Promise<Array<any>> => {
+        if (_.isNil(parent))
+            return new Array<any>();
+
+        logger.log(`${contextVar[Utils.handlerIdPrefix]}query_message() - cached`);
+        GqlTypesCommon.updateFieldTypeFilter(field, contextVar);
+        contextVar[`ChatMessage${GqlTypesCommon.suffixPropsFilter}`] = ['id', 'text', 'time', 'authorId', 'chatId'];
+        return await cachedResolveFns.getObjects(chatMessages, 'chatId', [args.id]);
+    },
+
+    query_message_author: async (field: any, args: any, contextConst: any, contextVar: any,
+                                                          parent: any): Promise<Array<any>> => {
+        if (_.isNil(parent))
+            return new Array<any>();
+
+        logger.log(`${contextVar[Utils.handlerIdPrefix]}query_message_author() - cached`);
+        GqlTypesCommon.updateFieldTypeFilter(field, contextVar);
+        return await cachedResolveFns.getObjects(users, 'id', [parent.authorId]);
+    },
+
+    query_message_chat: async (field: any, args: any, contextConst: any, contextVar: any,
+                          parent: any): Promise<Array<any>> => {
+        if (_.isNil(parent))
+            return new Array<any>();
+
+        logger.log(`${contextVar[Utils.handlerIdPrefix]}query_message_chat() - cached`);
+        GqlTypesCommon.updateFieldTypeFilter(field, contextVar);
+        return await cachedResolveFns.getObjects(chatMessages, 'id', [parent.chatId]);
+    },
+
+    // -- query: personChats ------------------------------------------------------------------------
+
     query_personChats: async (field: any, args: any, contextConst: any, contextVar: any,
-                                  parent: any): Promise<Array<any>> => {
+                              parent: any): Promise<Array<any>> => {
         if (_.isNil(parent))
             return new Array<any>();
 
         logger.log(`${contextVar[Utils.handlerIdPrefix]}query_personChats() - cached`);
         GqlTypesCommon.updateFieldTypeFilter(field, contextVar);
+        contextVar[`Chat${GqlTypesCommon.suffixPropsFilter}`] = ['id', 'topic'];
         const u = (await cachedResolveFns.getObjects(users, 'name', [args.personName]))[0];
         const ps = await cachedResolveFns.getObjects(participants, 'userId', [u.id]);
         return  await cachedResolveFns.getObjects(chats, 'id', ps.map((p: any) => p.chatId));
@@ -97,28 +135,36 @@ export const cachedResolveFns = {
             return new Array<any>();
 
         logger.log(`${contextVar[Utils.handlerIdPrefix]}query_personChats_participants() - cached`);
-         GqlTypesCommon.updateFieldTypeFilter(field, contextVar);
-         const ps = await cachedResolveFns.getObjects(participants, 'chatId', [parent.id]);
-         return await cachedResolveFns.getObjects(users, 'id', ps.map((p: any) => p.userId));
+        GqlTypesCommon.updateFieldTypeFilter(field, contextVar);
+        const ps = await cachedResolveFns.getObjects(participants, 'chatId', [parent.id]);
+        return await cachedResolveFns.getObjects(users, 'id', ps.map((p: any) => p.userId));
      },
 
-    // query_personChats_messages: async (field: any, args: any, contextConst: any, contextVar: any,
+    // // -- query: personChatsWithMessages-----------------------------------------------------------------
+    //
+    // query_personChatsWithMessages: async (field: any, args: any, contextConst: any, contextVar: any, parent: any) =>
+    //     await cachedResolveFns.query_personChats(field, args, contextConst, contextVar, parent),
+    //
+    // query_personChatsWithMessages_participants: async (field: any, args: any, contextConst: any, contextVar: any,
+    //                                        parent: any): Promise<Array<any>> =>
+    //     await cachedResolveFns.query_personChats_participants(field, args, contextConst, contextVar, parent),
+    //
+    // query_personChatsWithMessages_messages: async (field: any, args: any, contextConst: any, contextVar: any,
     //                                        parent: any): Promise<Array<any>> => {
     //     if (_.isNil(parent))
     //         return new Array<any>();
     //
-    //     logger.log(`${contextVar[Utils.handlerIdPrefix]}query_personChats_messages() - cached`);
+    //     logger.log(`${contextVar[Utils.handlerIdPrefix]}query_personChatsWithMessages_messages() - cached`);
     //     contextVar[`ChatMessage${GqlTypesCommon.suffixPropsFilter}`] = ['text', 'time', 'authorId'];
-    //     const ret = await cachedResolveFns.getObjects(chatMessages, 'chatId', [parent.id]);
     //     return await cachedResolveFns.getObjects(chatMessages, 'chatId', [parent.id]);
     // },
     //
-    // query_personChats_messages_author: async (field: any, args: any, contextConst: any, contextVar: any,
+    // query_personChatsWithMessages_messages_author: async (field: any, args: any, contextConst: any, contextVar: any,
     //                                               parent: any): Promise<Array<any>> => {
     //     if (_.isNil(parent))
     //         return new Array<any>();
     //
-    //     logger.log(`${contextVar[Utils.handlerIdPrefix]}query_personChats_messages_author() - cached`);
+    //     logger.log(`${contextVar[Utils.handlerIdPrefix]}query_personChatsWithMessages_messages_author() - cached`);
     //     GqlTypesCommon.updateFieldTypeFilter(field, contextVar);
     //     return await cachedResolveFns.getObjects(users, 'id', [parent.authorId]);
     // },

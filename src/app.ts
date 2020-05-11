@@ -6,8 +6,9 @@ import { Logger } from './logger';
 import { GqlProvider } from './gql_infra/gqlProvider';
 import { cachedResolveFns, chats } from './resolve_funcs/cached/cachedDataResolveFuncs';
 import { sqlResolveFns, connectToSql } from './resolve_funcs/sql/sqlServerResolveFuncs';
-import { User, ChatMessage, Chat } from './types/types';
+import { User, Message, Chat, ChatMessage /*, ChatWithMessages*/ } from './types/types';
 import bodyParser from 'body-parser';
+import { GqlTypesCommon } from './gql_infra/gqlTypesCommon';
 const graphql = require('graphql');
 const {
     GraphQLSchema,
@@ -51,15 +52,27 @@ export const gqlTypesCommon = gqlProvider.typesCommon;
                 user: {
                     type: gqlTypes['User'],
                     args: {
-                        id: { type: GraphQLInt }
+                        id: { type: GraphQLNonNull(GraphQLInt) }
+                    },
+                },
+                message: {
+                    type: gqlTypes['Message'],
+                    args: {
+                        id: { type: GraphQLNonNull(GraphQLInt) }
                     },
                 },
                 personChats: {
                     type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(gqlTypes['Chat']))),
                     args: {
-                        personName: { type: GraphQLString }
+                        personName: { type: GraphQLNonNull(GraphQLString) }
                     },
-                }
+                },
+                // personChatsWithMessages: {
+                //     type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(gqlTypes['ChatWithMessages']))),
+                //     args: {
+                //         personName: { type: GraphQLNonNull(GraphQLString) }
+                //     },
+                // }
             }
         });
     }
@@ -67,8 +80,8 @@ export const gqlTypesCommon = gqlProvider.typesCommon;
     // Settings for gqlProvider.
     // Placed after start listening for test purposes.
     gqlProvider
-        .registerTypesAndCreateSchema(User, ChatMessage, Chat) //withSchema
-        //schemaless .registerTypes(User, ChatMessage, Chat)
+        .registerTypesAndCreateSchema(User, Message, Chat /*ChatMessage, ChatWithMessages*/) //withSchema
+        //schemaless .registerTypes(User, ChatMessage, Chat, ChatWithMessages)
         .registerResolveFunctions(resolveFns)
         .registerResolvedFields(
             //-- user ---------------------------------------------------------------
@@ -77,27 +90,61 @@ export const gqlTypesCommon = gqlProvider.typesCommon;
                 type: User, // required for topmost fields only
             },
 
+            //-- message -------------------------------------------------------------
+            {
+                fullFieldPath: 'message',
+                type: Message, // required for topmost fields only
+            },
+            {
+                fullFieldPath: 'message.author',
+                resolveFunc: async (field, args, contextConst, contextVar) => {
+                    const fieldName = field.arrPath[0];
+
+                    await gqlProvider.resolveFunc('message.author',
+                        field, args, contextConst, contextVar);
+
+                    GqlTypesCommon.applyFilter(fieldName, contextVar);
+                }
+            },
+
             //-- personChats --------------------------------------------------------
             {
                 fullFieldPath: 'personChats',
                 type: [Chat], // required for topmost fields only
             },
+
+            // //-- personChatsWithMessages --------------------------------------------------------
             // {
-            //     fullFieldPath: 'personChats.messages',
+            //     fullFieldPath: 'personChatsWithMessages',
+            //     type: [ChatWithMessages], // required for topmost fields only
+            // },
+            // {
+            //     fullFieldPath: 'personChatsWithMessages.messages',
             //     resolveFunc: async (field, args, contextConst, contextVar) => {
             //         const filterArgs = field.children.map((c: any) => c.fieldName);
             //         GqlTypesCommon.setFilter(field.fieldName, filterArgs, contextVar);
             //
-            //         await gqlProvider.resolveFunc('personChats.messages',
+            //         await gqlProvider.resolveFunc('personChatsWithMessages.messages',
             //             field, args, contextConst, contextVar);
             //     }
             // },
             // {
-            //     fullFieldPath: 'personChats.messages.author',
+            //     fullFieldPath: 'personChatsWithMessages.message.chat',
+            //     resolveFunc: async (field, args, contextConst, contextVar) => {
+            //         const fieldName = field.arrPath[0];
+            //
+            //         await gqlProvider.resolveFunc('personChatsWithMessages.message.chat',
+            //             field, args, contextConst, contextVar);
+            //
+            //         GqlTypesCommon.applyFilter(fieldName, contextVar);
+            //     }
+            // },
+            // {
+            //     fullFieldPath: 'personChatsWithMessages.messages.author',
             //     resolveFunc: async (field, args, contextConst, contextVar) => {
             //         const fieldName = field.arrPath[1];
             //
-            //         await gqlProvider.resolveFunc('personChats.messages.author',
+            //         await gqlProvider.resolveFunc('personChatsWithMessages.messages.author',
             //             field, args, contextConst, contextVar);
             //
             //         GqlTypesCommon.applyFilter(fieldName, contextVar);
@@ -181,6 +228,27 @@ export const gqlTypesCommon = gqlProvider.typesCommon;
 
 /* Requests
 
+# query {
+#   user(id: 1) {
+#     name
+#     email
+#     role
+#   }
+# }
+
+# query {
+#   message(id: 1) {
+#     time
+#     author {
+#       name
+#       role
+#       email
+#     }
+#     text
+#     id
+#   }
+# }
+
 query {
   personChats(personName: "Rachel") {
     id
@@ -188,26 +256,37 @@ query {
     participants {
       name
       email
+      role
     }
   }
 }
 
-query {
-  user(id: 1) {
-    name
-    email
-    role
-  }
-}
+#query {
+#  personChatsWithMessages(personName: "Rachel") {
+#    id
+#    topic
+#    participants {
+#      name
+#      email
+#    }
+#    messages {
+#      author {
+#        name
+#      }
+#      text
+#      time
+#    }
+#  }
+#}
 
-mutation {
-  addMessage(
-    chat: "topic2",
-    text: "some text",
-    time: "2020-04-10"
-    author: "Zeev"
-  )
-}
+#mutation {
+#  addMessage(
+#    chat: "topic2",
+#    text: "some text",
+#    time: "2020-04-10"
+#    author: "Zeev"
+#  )
+#}
 
 */
 

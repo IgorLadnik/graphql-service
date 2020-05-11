@@ -43,10 +43,12 @@ export class GqlTypesCommon {
 
                     // Properties loop
                     let promisesProp = new Array<Promise<void>>();
-                    const jMax = _.isNil(parents) || parents.length === 0 ? 1 : parents.length;
+                    const jMax = _.isNil(parents) || !_.isArray(parents) || parents?.length === 0 ? 1 : parents.length;
                     for (let j = 0; j < jMax; j++) {
                         promisesProp.push((async (): Promise<void> => {
-                            const parent: any = _.isNil(parents) ? { } : parents[j];
+                            let parent: any = { };
+                            if (!_.isNil(parents))
+                                parent = _.isArray(parents) && parents.length > 0 ? parents[j] : parents;
 
                             const items = await queryFn(field, args, contextConst, contextVar, parent);
 
