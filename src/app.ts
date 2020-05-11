@@ -80,7 +80,7 @@ export const gqlTypesCommon = gqlProvider.typesCommon;
     // Settings for gqlProvider.
     // Placed after start listening for test purposes.
     gqlProvider
-        .registerTypesAndCreateSchema(User, Message, Chat /*ChatMessage, ChatWithMessages*/) //withSchema
+        .registerTypesAndCreateSchema(User, Message, Chat, ChatMessage /*, ChatWithMessages*/) //withSchema
         //schemaless .registerTypes(User, ChatMessage, Chat, ChatWithMessages)
         .registerResolveFunctions(resolveFns)
         .registerResolvedFields(
