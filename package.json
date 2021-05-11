@@ -46,7 +46,7 @@
     "graphql-toolkit": "^0.7.5",
     "graphql-tools": "^4.0.7",
     "http": "0.0.0",
-    "lodash": "^4.17.15",
+    "lodash": "^4.17.21",
     "msnodesqlv8": "^1.1.1",
     "mssql": "^6.2.0",
     "ncp": "2.0.0",
